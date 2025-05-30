@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Конфігуратор ПК</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://kit.fontawesome.com/0ac0840733.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="app">
+        <!-- === Sidebar === -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <a href="/" class="logo">
+                    <img src="/img/logo.svg" alt="BuildCores" />
+                    <span class="logo-text">BuildCores</span>
+                    <span class="beta">BETA v0.8</span>
+                </a>
+                <div class="sidebar-controls">
+                    <button id="theme-toggle">Dark</button>
+                    <select id="region-select">
+                        <option value="us">US</option>
+                        <option value="eu">EU</option>
+                    </select>
+                </div>
+            </div>
+
+            <nav class="nav-primary">
+                <ul>
+                    <li><a href="/build.html">3D Builder</a></li>
+                    <li><a href="/products.html">Products</a></li>
+                    <li><a href="/compare.html">Compare</a></li>
+                    <li><a href="/gallery.html">3D Part Gallery</a></li>
+                </ul>
+            </nav>
+
+            <div class="nav-community">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="/completed.html">Completed Builds</a></li>
+                    <li><a href="/updates.html">Updates</a></li>
+                    <li><a href="https://discord.gg/…">Discord</a></li>
+                    <li><a href="https://reddit.com/r/…">Reddit</a></li>
+                </ul>
+            </div>
+
+            <div class="current-build">
+                <h3>Current Build</h3>
+                <div class="current-build-info">
+                    <span id="current-build-name">New Build</span>
+                    <span id="current-build-price">₴ 0.00</span>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="signup-btn">Sign Up</button>
+                <a href="/login.html" id="login-link">Log In</a>
+            </div>
+            <div class="zalupa"></div>
+        </aside>
+        <!-- === Main Content === -->
+        <main class="main">
+            <header class="build-header">
+                <div class="build-header-left">
+                    <!-- New Build + селектор -->
+                    <button id="new-build">+ New Build</button>
+                    <select id="build-selector"></select>
+
+
+
+                    <!-- Дата • Авторы -->
+
+                </div>
+            </header>
+
+            <section class="parts-list">
+                <div class="build-info">
+                    <!-- Информация о сборке -->
+                    <div class="build-info-row">
+                        <div class="meta-build-info">
+                            <h1 id="build-name" contenteditable="true" title="Клікніть, щоб змінити назву">
+                                New Build
+                            </h1>
+                            <div class="build-meta-text">
+                                <span id="build-date">—</span> • <span id="build-author">—</span>
+                            </div>
+                        </div>
+                        <!-- Общая цена -->
+                        <div class="info-item-wrapper">
+                            <div class="info-item price">
+                                <i class="fa fa-dollar-sign"></i>
+                                <span id="totalPrice">0</span> <span> ГРН</span>
+                            </div>
+                            <!-- Совместимость (заглушка) -->
+                            <div class="info-item compatible">
+                                <i class="fa fa-check-circle"></i>
+                                <span id="compatibility">—</span>
+                            </div>
+                            <!-- Суммарный TDP -->
+                            <div class="info-item tdp">
+                                <i class="fa fa-bolt"></i>
+                                <span id="totalTdp">0</span> W
+                            </div>
+                            <!-- 3DMark (заглушка) -->
+                            <div class="info-item mark3d">
+                                <i class="fa fa-trophy"></i>
+                                <span id="mark3d">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="PCCase">
+                    <div class="part-category-wraper">
+                        <h3>PC Case</h3>
+                        <button class="add-btn">+ Add PC Case</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="Motherboard">
+                    <div class="part-category-wraper">
+                        <h3>Motherboard</h3>
+                        <button class="add-btn">+ Add Motherboard</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CPU">
+                    <div class="part-category-wraper">
+                        <h3>CPU</h3>
+                        <button class="add-btn">+ Add CPU</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CPUCooler">
+                    <div class="part-category-wraper">
+                        <h3>CPU Cooler</h3>
+                        <button class="add-btn">+ Add CPU Cooler</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="GPU">
+                    <div class="part-category-wraper">
+                        <h3>GPU</h3>
+                        <button class="add-btn">+ Add GPU</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="RAM">
+                    <div class="part-category-wraper">
+                        <h3>RAM</h3>
+                        <button class="add-btn">+ Add RAM</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="Storage">
+                    <div class="part-category-wraper">
+                        <h3>Storage</h3>
+                        <button class="add-btn">+ Add Storage</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="PSU">
+                    <div class="part-category-wraper">
+                        <h3>Power Supply</h3>
+                        <button class="add-btn">+ Add PSU</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="NetworkCard">
+                    <div class="part-category-wraper">
+                        <h3>Network Card</h3>
+                        <button class="add-btn">+ Add Network Card</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CaseFan">
+                    <div class="part-category-wraper">
+                        <h3>Case Fan</h3>
+                        <button class="add-btn">+ Add Case Fan</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="Monitor">
+                    <div class="part-category-wraper">
+                        <h3>Monitor</h3>
+                        <button class="add-btn">+ Add Monitor</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="SoundCard">
+                    <div class="part-category-wraper">
+                        <h3>Sound Card</h3>
+                        <button class="add-btn">+ Add Sound Card</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Quick Add Modal -->
+    <div class="overlay" id="quickAddOverlay">
+        <div class="modal">
+            <!-- 1) Фильтры -->
+            <aside class="filter-sidebar">
+                <h4>Filters</h4>
+
+                <!-- 1) Чекбоксы совместимости -->
+                <label>
+                    <input type="checkbox" id="compatibilityOnly" checked />
+                    Compatibility Only
+                </label>
+                <label>
+                    <input type="checkbox" id="only3d" />
+                    3D Only
+                </label>
+                <hr />
+
+                <!-- 2) Ползунки цены -->
+                <div>
+                    <h5>Price</h5>
+                    <div class="price-filter">
+                        <input type="range" id="priceMin" min="0" max="20000" step="100" value="0" />
+                        <input type="range" id="priceMax" min="0" max="20000" step="100" value="20000" />
+                        <div class="price-values">
+                            <span id="priceMinVal">$0</span>
+                            <span id="priceMaxVal">$20000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3) Динамические категории фильтров (вставляются скриптом setup*FiltersHTML) -->
+            </aside>
+
+
+            <!-- 2) Контейнер для хедера, сетки и пагинации -->
+            <div class="quickadd-content">
+                <!-- Header Quick Add -->
+                <div class="quickadd-header">
+                    <div id="productsCount" class="products-count">
+                        <!-- JS подставит: "2181 Compatible Products" -->
+                    </div>
+                    <div class="qa-controls">
+                        <label for="sortBySelect">
+                            Sort by
+                            <select id="sortBySelect">
+                                <option value="default">Default</option>
+                                <!-- другие опции -->
+                            </select>
+                        </label>
+                        <input id="component-search" type="text" placeholder="Search by name..." />
+                    </div>
+                </div>
+
+                <section class="products-grid" id="productsGrid"></section>
+
+                <div class="quickadd-footer">
+                    <div class="rows-per-page">
+                        Rows per page
+                        <select id="rowsPerPage">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div id="paginationControls" class="pagination-controls"></div>
+                </div>
+            </div>
+
+            <!-- 3) Кнопка закрытия -->
+            <button class="modal-close" id="closeQuickAdd">✕</button>
+        </div>
+    </div>
+
+    <script type="module" src="/js/components.js"></script>
+    <script type="module" src="/js/quickAdd.js"></script>
+    <script type="module" src="/js/build.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+# База OpenDB
+open-db/
+
+# IDE и ОС
+.vscode/
+.DS_Store
