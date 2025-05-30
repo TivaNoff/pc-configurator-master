@@ -91,12 +91,12 @@
                         <!-- Общая цена -->
                         <div class="info-item-wrapper">
                             <div class="info-item price">
-                                <i class="fa fa-dollar-sign"></i>
-                                <span id="totalPrice">0</span> <span> ГРН</span>
+                                <i class="fa fa-solid fa-money-bill"></i>
+                                <span id="totalPrice">0</span> <span>₴</span>
                             </div>
                             <!-- Совместимость (заглушка) -->
                             <div class="info-item compatible">
-                                <i class="fa fa-check-circle"></i>
+                                <i class="fa fa-check-circle" id="compicon""></i>
                                 <span id="compatibility">—</span>
                             </div>
                             <!-- Суммарный TDP -->
@@ -228,14 +228,14 @@
                 <!-- Header Quick Add -->
                 <div class="quickadd-header">
                     <div id="productsCount" class="products-count">
-                        <!-- JS подставит: "2181 Compatible Products" -->
                     </div>
                     <div class="qa-controls">
                         <label for="sortBySelect">
                             Sort by
                             <select id="sortBySelect">
                                 <option value="default">Default</option>
-                                <!-- другие опции -->
+                                <option value="priceAsc">Price: low to high</option>
+                                <option value="priceDesc">Price: high to low</option>
                             </select>
                         </label>
                         <input id="component-search" type="text" placeholder="Search by name..." />

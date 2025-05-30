@@ -58,8 +58,8 @@ function showProductDetails(product) {
 
   detailModal.innerHTML = `
     <button class="modal-close" id="closeDetail">✕</button>
-    <img src="${imgUrl}" alt="${title}" class="detail-overlay-img" />
     <h3>${title}</h3>
+    <img src="${imgUrl}" alt="${title}" class="detail-overlay-img" />
     <ul>${specsList}</ul>
   `;
 
@@ -87,6 +87,7 @@ export function setupListeners() {
   const rowsPerPageSel = document.getElementById("rowsPerPage");
   const closeBtn = document.getElementById("closeQuickAdd");
   const searchInput = document.getElementById("component-search");
+  const sortBySelect = document.getElementById("sortBySelect");
 
   document.body.addEventListener("click", async (e) => {
     if (e.target.matches(".add-btn")) {
@@ -149,5 +150,9 @@ export function setupListeners() {
     } else {
       showProductDetails(product);
     }
+  });
+
+  sortBySelect.addEventListener("change", () => {
+    applyFiltersAndRender(); // Повторно применить фильтры и отсортировать
   });
 }

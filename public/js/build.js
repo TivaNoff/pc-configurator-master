@@ -17,6 +17,7 @@ const buildSelector = document.getElementById("build-selector");
 const newBuildBtn = document.getElementById("new-build");
 const totalPriceSpan = document.getElementById("totalPrice");
 const compatibilitySpan = document.getElementById("compatibility");
+const compicon = document.getElementById("compicon");
 const totalTdpSpan = document.getElementById("totalTdp");
 const mark3dSpan = document.getElementById("mark3d");
 const buildDateSpan = document.getElementById("build-date");
@@ -270,9 +271,14 @@ function updateTotal() {
 
   // Выводим реальный статус совместимости
   const compatible = checkCompatibility(selectedParts);
-  compatibilitySpan.textContent = compatible ? "Compatible" : "Incompatible";
-  compatibilitySpan.style.color = compatible ? "#4caf50" : "#f44336";
-
+  if (compatible) {
+    compatibilitySpan.textContent = "Compatible";
+    compatibilitySpan.style.color = "#2196f3";
+  } else {
+    compatibilitySpan.textContent = "Incompatible";
+    compatibilitySpan.style.color = "#f44336";
+    compicon.style.color = "#f44336";
+  }
   mark3dSpan.textContent = "—";
 }
 

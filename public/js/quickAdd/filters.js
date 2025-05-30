@@ -180,6 +180,8 @@ export function applyFiltersAndRender() {
   let prods = [...allProducts];
   const minP = Number(document.getElementById("priceMin").value);
   const maxP = Number(document.getElementById("priceMax").value);
+  const sortBySelect = document.getElementById("sortBySelect");
+
   const query = document
     .getElementById("component-search")
     .value.trim()
@@ -423,6 +425,19 @@ export function applyFiltersAndRender() {
 
     return true;
   });
+
+  switch (sortBySelect) {
+    case "priceAsc":
+      prods.sort((a, b) => (a.prices?.Ekua ?? 0) - (b.prices?.Ekua ?? 0));
+      break;
+    case "priceDesc":
+      prods.sort((a, b) => (b.prices?.Ekua ?? 0) - (a.prices?.Ekua ?? 0));
+      break;
+    // default - без сортировки или по дефолту
+    default:
+      // Оставляем порядок как есть или можно добавить дефолтную сортировку
+      break;
+  }
 
   // Сортируем: сначала с ценой, потом без
   const withPrice = prods.filter((p) => p.prices?.Ekua != null);

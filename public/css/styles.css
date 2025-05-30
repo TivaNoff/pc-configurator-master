@@ -735,8 +735,14 @@ html {
   border-radius: 8px;
   padding: 1.5rem;
   overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   position: relative;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.modal.detail-modal li {
+  list-style-type: auto;
 }
 
 /* Кнопка закрытия */
@@ -780,8 +786,9 @@ html {
 }
 
 .detail-overlay-img {
-  max-width: 100%;
-  height: auto;
+  width: 400px;
+  height: fit-content;
+  border-radius: 4px;
 }
 
 .sidebar-filter-section {
@@ -825,6 +832,7 @@ html {
   display: flex;
   gap: 1rem;
   align-items: center;
+  margin-right: 20px;
 }
 
 .quickadd-header .qa-controls label {
@@ -968,4 +976,8 @@ html {
   font-size: 0.9rem;
   color: var(--fg);
   user-select: none;
+}
+
+.fa {
+  font-family: "Font Awesome 6 Free";
 }
