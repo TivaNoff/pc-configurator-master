@@ -1,59 +1,97 @@
-// filters.js
+// public/js/quickAdd/filters.js
 
 import { renderCheckboxList, getCheckedValues } from "./helpers.js";
 import { renderProductsPage, setCurrentPage } from "./productFlow.js";
 import { selectedParts, checkCompatibility } from "../build.js";
 
-let allProducts = [];
-let filteredProducts = [];
-let currentCategory = "";
+let allProducts = []; // Stores all products for the current category
+let filteredProducts = []; // Stores products after filtering
+let currentCategory = ""; // The current component category being viewed
 let defaultMinPrice = 0;
 let defaultMaxPrice = 0;
 
+/**
+ * Sets the master list of all products for the current category.
+ * @param {object[]} data - Array of product objects.
+ */
 export function setAllProducts(data) {
-  allProducts = data;
+  allProducts = Array.isArray(data) ? data : [];
 }
 
+/**
+ * Sets the current category for filtering.
+ * @param {string} cat - The category name (e.g., "CPU", "GPU").
+ */
 export function setCurrentCategory(cat) {
   currentCategory = cat;
 }
 
+/**
+ * Gets the currently filtered list of products.
+ * @returns {object[]} Array of filtered product objects.
+ */
 export function getFilteredProducts() {
   return filteredProducts;
 }
 
+/**
+ * Safely gets a nested value from an object using a dot-separated path.
+ * @param {object} obj - The object to traverse.
+ * @param {string} path - The dot-separated path (e.g., "specs.metadata.name").
+ * @returns {*} The value at the path, or undefined if not found.
+ */
 function getNestedValue(obj, path) {
-  // path — строка вида 'specifications.integratedGraphics.model'
+  if (!obj || typeof path !== "string") return undefined;
   return path.split(".").reduce((acc, key) => acc?.[key], obj);
 }
 
+/**
+ * Initializes all filter UI elements.
+ * This function should be called after `setAllProducts` and `setCurrentCategory`.
+ */
 export function initFilters() {
-  const priceMin = document.getElementById("priceMin");
-  const priceMax = document.getElementById("priceMax");
-  const priceMinVal = document.getElementById("priceMinVal");
-  const priceMaxVal = document.getElementById("priceMaxVal");
+  const priceMinSlider = document.getElementById("priceMin");
+  const priceMaxSlider = document.getElementById("priceMax");
+  const priceMinValDisplay = document.getElementById("priceMinVal");
+  const priceMaxValDisplay = document.getElementById("priceMaxVal");
 
   const prices = allProducts
     .map((p) => p.prices?.Ekua)
-    .filter((v) => v != null);
-  if (prices.length === 0) return;
+    .filter((v) => typeof v === "number" && !isNaN(v));
 
-  defaultMinPrice = 0;
-  defaultMaxPrice = Math.max(...prices);
+  defaultMinPrice = prices.length > 0 ? Math.min(0, ...prices) : 0; // Can be 0 if all positive
+  defaultMaxPrice = prices.length > 0 ? Math.max(...prices) : 10000; // Default max if no prices
 
-  priceMin.min = priceMax.min = defaultMinPrice;
-  priceMin.max = priceMax.max = defaultMaxPrice;
-  priceMin.value = defaultMinPrice;
-  priceMax.value = defaultMaxPrice;
-  priceMinVal.textContent = `$${defaultMinPrice}`;
-  priceMaxVal.textContent = `$${defaultMaxPrice}`;
+  if (
+    priceMinSlider &&
+    priceMaxSlider &&
+    priceMinValDisplay &&
+    priceMaxValDisplay
+  ) {
+    priceMinSlider.min = defaultMinPrice;
+    priceMinSlider.max = defaultMaxPrice;
+    priceMinSlider.value = defaultMinPrice;
 
-  document.getElementById("compatibilityOnly").checked;
-  document.getElementById("only3d").checked = false;
-  document.getElementById("component-search").value = "";
+    priceMaxSlider.min = defaultMinPrice;
+    priceMaxSlider.max = defaultMaxPrice;
+    priceMaxSlider.value = defaultMaxPrice;
 
-  // Скрыть все блоки фильтров
-  [
+    priceMinValDisplay.textContent = `₴${defaultMinPrice}`;
+    priceMaxValDisplay.textContent = `₴${defaultMaxPrice}`;
+  }
+
+  const compatibilityOnlyCheckbox =
+    document.getElementById("compatibilityOnly");
+  if (compatibilityOnlyCheckbox) compatibilityOnlyCheckbox.checked = true; // Default to true or as needed
+
+  const only3dCheckbox = document.getElementById("only3d");
+  if (only3dCheckbox) only3dCheckbox.checked = false;
+
+  const searchInput = document.getElementById("component-search");
+  if (searchInput) searchInput.value = "";
+
+  // Hide all filter sections first
+  const allFilterContainerIds = [
     "cpu-filters",
     "gpu-filters",
     "mb-filters",
@@ -63,57 +101,215 @@ export function initFilters() {
     "storage-filters",
     "psu-filters",
     "monitor-filters",
-  ].forEach((id) => {
+  ];
+  allFilterContainerIds.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = "none";
   });
 
-  // Настраиваем фильтры для выбранной категории
-  switch (currentCategory.toLowerCase()) {
-    case "cpu":
-      setupCategoryFilters("cpu-filters", {
+  // Define filter configurations for each category
+  const categoryFilterConfigs = {
+    cpu: {
+      containerId: "cpu-filters",
+      filters: {
         socketFilter: "socket",
         microarchitectureFilter: "microarchitecture",
-        integratedGraphicsFilter: "specifications.integratedGraphics.model",
-      });
-      break;
-
-    case "gpu":
-      setupCategoryFilters("gpu-filters", {
+        integratedGraphicsFilter: "specifications.integratedGraphics.model", // Example of deeper path
+      },
+    },
+    gpu: {
+      containerId: "gpu-filters",
+      filters: {
         chipsetFilter: "chipset",
         memoryTypeFilter: "memory_type",
         interfaceFilter: "interface",
         manufacturerFilter: "metadata.manufacturer",
-      });
-      break;
-
-    case "motherboard":
-      setupCategoryFilters("mb-filters", {
+      },
+    },
+    motherboard: {
+      containerId: "mb-filters",
+      filters: {
         socketFilterMB: "socket",
         formFactorFilter: "form_factor",
         mbChipsetFilter: "chipset",
         ramTypeFilter: "memory.ram_type",
         mbManufacturerFilter: "metadata.manufacturer",
-      });
-      break;
-
-    case "pccase":
-      setupCategoryFilters("case-filters", {
+      },
+    },
+    pccase: {
+      containerId: "case-filters",
+      filters: {
         caseFormFactorFilter: "form_factor",
         sidePanelFilter: "side_panel",
         caseManufacturerFilter: "metadata.manufacturer",
-      });
-      break;
-
-    case "cpucooler":
-      setupCategoryFilters("cooler-filters", {
+      },
+    },
+    cpucooler: {
+      containerId: "cooler-filters",
+      filters: {
         coolerManufacturerFilter: "metadata.manufacturer",
-        waterCooledFilter: "water_cooled",
-      });
-      break;
+        waterCooledFilter: "water_cooled", // Boolean
+        // socketCompatibilityCooler: "cpu_sockets" // Array
+      },
+    },
+    ram: {
+      containerId: "ramfilters",
+      filters: {
+        ramTypeFilterRAM: "ram_type", // or 'type'
+        ramFormFactorFilter: "form_factor",
+        eccFilter: "ecc", // Boolean
+        registeredFilter: "registered", // Boolean
+        ramManufacturerFilter: "metadata.manufacturer",
+        heatSpreaderFilter: "heat_spreader", // Boolean
+        rgbFilter: "rgb", // Boolean
+      },
+    },
+    storage: {
+      containerId: "storage-filters",
+      filters: {
+        storageTypeFilter: "type",
+        storageFormFactorFilter: "form_factor",
+        storageInterfaceFilter: "interface",
+        storageManufacturerFilter: "metadata.manufacturer",
+        nvmeFilter: "nvme", // Boolean
+      },
+    },
+    psu: {
+      containerId: "psu-filters",
+      filters: {
+        psuFormFactorFilter: "form_factor",
+        efficiencyRatingFilter: "efficiency_rating",
+        modularFilter: "modular", // Often a string like "Full", "Semi", "None"
+        psuManufacturerFilter: "metadata.manufacturer",
+      },
+    },
+    monitor: {
+      containerId: "monitor-filters",
+      filters: {
+        monitorBrandFilter: "metadata.manufacturer",
+        refreshRateFilter: "refresh_rate", // Number
+        screenSizeFilter: "screen_size", // Number (inches)
+        verticalResFilter: "resolution.verticalRes", // Number
+        horizontalResFilter: "resolution.horizontalRes", // Number
+        panelTypeFilter: "panel_type",
+      },
+    },
+  };
 
-    case "ram":
-      setupCategoryFilters("ramfilters", {
+  const config = categoryFilterConfigs[currentCategory.toLowerCase()];
+  if (config) {
+    const filterContainer = document.getElementById(config.containerId);
+    if (filterContainer) {
+      filterContainer.style.display = "flex"; // Show the relevant filter section
+
+      // Collect all unique values for the active filters in one pass
+      const valueSetsForFilters = {};
+      Object.keys(config.filters).forEach((filterKey) => {
+        valueSetsForFilters[filterKey] = new Set();
+      });
+
+      allProducts.forEach((product) => {
+        Object.entries(config.filters).forEach(([filterKey, specsPath]) => {
+          let value = getNestedValue(product.specs, specsPath);
+          if (value !== undefined && value !== null && value !== "") {
+            if (Array.isArray(value)) {
+              // Handle array values (e.g., CPU cooler sockets)
+              value.forEach((item) =>
+                valueSetsForFilters[filterKey].add(String(item))
+              );
+            } else if (typeof value === "boolean") {
+              valueSetsForFilters[filterKey].add(value ? "Yes" : "No");
+            } else {
+              valueSetsForFilters[filterKey].add(String(value));
+            }
+          }
+        });
+      });
+
+      // Render checkbox lists for each filter
+      Object.entries(config.filters).forEach(([filterKey, _]) => {
+        // filterKey is the ID of the div that will contain the checkboxes (e.g., "socketFilter")
+        renderCheckboxList(
+          filterKey,
+          valueSetsForFilters[filterKey],
+          applyFiltersAndRender
+        );
+      });
+    } else {
+      console.error(
+        `Filter container #${config.containerId} not found for category ${currentCategory}.`
+      );
+    }
+  }
+}
+
+/**
+ * Applies all active filters to the `allProducts` list and re-renders the product grid.
+ */
+export function applyFiltersAndRender() {
+  let prods = [...allProducts]; // Start with all products for the current category
+
+  // Price filters
+  const minPrice = Number(
+    document.getElementById("priceMin")?.value ?? defaultMinPrice
+  );
+  const maxPrice = Number(
+    document.getElementById("priceMax")?.value ?? defaultMaxPrice
+  );
+
+  // Search query
+  const searchQuery =
+    document.getElementById("component-search")?.value.trim().toLowerCase() ??
+    "";
+  const searchWords = searchQuery.split(/\s+/).filter((w) => w.length > 0);
+
+  // Checkbox states
+  const compatibilityOnly =
+    document.getElementById("compatibilityOnly")?.checked ?? false;
+  const only3d = document.getElementById("only3d")?.checked ?? false; // Assuming you have a 'supports3D' or similar in specs
+
+  // Category-specific filter configurations (mirrors initFilters structure)
+  const categoryFilterConfigs = {
+    cpu: {
+      filters: {
+        socketFilter: "socket",
+        microarchitectureFilter: "microarchitecture",
+        integratedGraphicsFilter: "specifications.integratedGraphics.model",
+      },
+    },
+    gpu: {
+      filters: {
+        chipsetFilter: "chipset",
+        memoryTypeFilter: "memory_type",
+        interfaceFilter: "interface",
+        manufacturerFilter: "metadata.manufacturer",
+      },
+    },
+    motherboard: {
+      filters: {
+        socketFilterMB: "socket",
+        formFactorFilter: "form_factor",
+        mbChipsetFilter: "chipset",
+        ramTypeFilter: "memory.ram_type",
+        mbManufacturerFilter: "metadata.manufacturer",
+      },
+    },
+    pccase: {
+      filters: {
+        caseFormFactorFilter: "form_factor",
+        sidePanelFilter: "side_panel",
+        caseManufacturerFilter: "metadata.manufacturer",
+      },
+    },
+    cpucooler: {
+      filters: {
+        coolerManufacturerFilter: "metadata.manufacturer",
+        waterCooledFilter:
+          "water_cooled" /*, socketCompatibilityCooler: "cpu_sockets" */,
+      },
+    },
+    ram: {
+      filters: {
         ramTypeFilterRAM: "ram_type",
         ramFormFactorFilter: "form_factor",
         eccFilter: "ecc",
@@ -121,346 +317,148 @@ export function initFilters() {
         ramManufacturerFilter: "metadata.manufacturer",
         heatSpreaderFilter: "heat_spreader",
         rgbFilter: "rgb",
-      });
-      break;
-
-    case "storage":
-      setupCategoryFilters("storage-filters", {
+      },
+    },
+    storage: {
+      filters: {
         storageTypeFilter: "type",
         storageFormFactorFilter: "form_factor",
         storageInterfaceFilter: "interface",
         storageManufacturerFilter: "metadata.manufacturer",
         nvmeFilter: "nvme",
-      });
-      break;
-
-    case "psu":
-      setupCategoryFilters("psu-filters", {
+      },
+    },
+    psu: {
+      filters: {
         psuFormFactorFilter: "form_factor",
         efficiencyRatingFilter: "efficiency_rating",
         modularFilter: "modular",
         psuManufacturerFilter: "metadata.manufacturer",
-      });
-      break;
-
-    case "monitor":
-      setupCategoryFilters("monitor-filters", {
+      },
+    },
+    monitor: {
+      filters: {
         monitorBrandFilter: "metadata.manufacturer",
         refreshRateFilter: "refresh_rate",
         screenSizeFilter: "screen_size",
         verticalResFilter: "resolution.verticalRes",
         horizontalResFilter: "resolution.horizontalRes",
-      });
-      break;
-  }
-}
+        panelTypeFilter: "panel_type",
+      },
+    },
+  };
 
-function setupCategoryFilters(containerId, filtersMap) {
-  const container = document.getElementById(containerId);
-  if (!container) {
-    console.error(`initFilters: #${containerId} not found`);
-    return;
-  }
-  container.style.display = "flex";
-
-  Object.entries(filtersMap).forEach(([checkboxContainerId, specsPath]) => {
-    const valuesSet = new Set();
-    allProducts.forEach((p) => {
-      const val = getNestedValue(p.specs, specsPath);
-      if (val !== undefined && val !== null) {
-        if (typeof val === "boolean") valuesSet.add(val ? "Yes" : "No");
-        else valuesSet.add(String(val));
-      }
-    });
-    renderCheckboxList(checkboxContainerId, valuesSet, applyFiltersAndRender);
-  });
-}
-
-export function applyFiltersAndRender() {
-  let prods = [...allProducts];
-  const minP = Number(document.getElementById("priceMin").value);
-  const maxP = Number(document.getElementById("priceMax").value);
-  const sortBySelect = document.getElementById("sortBySelect");
-
-  const query = document
-    .getElementById("component-search")
-    .value.trim()
-    .toLowerCase();
-  const compOnly = document.getElementById("compatibilityOnly").checked;
-  const only3d = document.getElementById("only3d").checked;
+  const activeConfig = categoryFilterConfigs[currentCategory.toLowerCase()];
 
   prods = prods.filter((p) => {
-    const price = p.prices?.Ekua ?? 0;
-    if (price < minP || price > maxP) return false;
+    const price = p.prices?.Ekua ?? null;
+    if (price !== null && (price < minPrice || price > maxPrice)) return false;
+    if (price === null && (minPrice > 0 || maxPrice < defaultMaxPrice))
+      return false; // Handle products without price
 
-    // Вместо p.specs?.compatible теперь проверяем реальную совместимость с выбранными комплектующими
-    if (compOnly) {
-      // Создаем копию выбранных частей
-      const partsCopy = { ...selectedParts, [p.category]: p };
-      if (!checkCompatibility(partsCopy)) return false;
+    if (compatibilityOnly) {
+      const tempBuild = {
+        ...selectedParts,
+        [p.category || currentCategory]: p,
+      };
+      if (!checkCompatibility(tempBuild)) return false;
     }
 
-    if (only3d && !p.specs?.supports3D) return false;
+    if (only3d && !getNestedValue(p.specs, "supports3D")) return false; // Adjust path if needed
 
-    if (query) {
-      const words = query.split(/\s+/);
-      const name = (p.specs?.metadata?.name || "").toLowerCase();
-      if (!words.every((w) => name.includes(w))) return false;
+    if (searchQuery) {
+      const productName = (
+        getNestedValue(p.specs, "metadata.name") ||
+        getNestedValue(p.specs, "model") ||
+        ""
+      ).toLowerCase();
+      if (!searchWords.every((word) => productName.includes(word)))
+        return false;
     }
 
-    // Применяем категорийные фильтры
-    switch (currentCategory.toLowerCase()) {
-      case "cpu":
-        if (!checkCheckboxFilter("socketFilter", p.specs?.socket)) return false;
-        if (
-          !checkCheckboxFilter(
-            "microarchitectureFilter",
-            p.specs?.microarchitecture
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "integratedGraphicsFilter",
-            getNestedValue(p.specs, "specifications.integratedGraphics.model")
-          )
-        )
-          return false;
-        break;
-
-      case "gpu":
-        if (!checkCheckboxFilter("chipsetFilter", p.specs?.chipset))
-          return false;
-        if (!checkCheckboxFilter("memoryTypeFilter", p.specs?.memory_type))
-          return false;
-        if (!checkCheckboxFilter("interfaceFilter", p.specs?.interface))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "manufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        break;
-
-      case "motherboard":
-        if (!checkCheckboxFilter("socketFilterMB", p.specs?.socket))
-          return false;
-        if (!checkCheckboxFilter("formFactorFilter", p.specs?.form_factor))
-          return false;
-        if (!checkCheckboxFilter("mbChipsetFilter", p.specs?.chipset))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "ramTypeFilter",
-            getNestedValue(p.specs, "memory.ram_type")
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "mbManufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        break;
-
-      case "pccase":
-        if (!checkCheckboxFilter("caseFormFactorFilter", p.specs?.form_factor))
-          return false;
-        if (!checkCheckboxFilter("sidePanelFilter", p.specs?.side_panel))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "caseManufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        break;
-
-      case "cpucooler":
-        if (
-          !checkCheckboxFilter(
-            "coolerManufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "waterCooledFilter",
-            p.specs?.water_cooled === true
-              ? "Yes"
-              : p.specs?.water_cooled === false
-              ? "No"
-              : null
-          )
-        )
-          return false;
-        break;
-
-      case "ram":
-        if (!checkCheckboxFilter("ramTypeFilterRAM", p.specs?.ram_type))
-          return false;
-        if (!checkCheckboxFilter("ramFormFactorFilter", p.specs?.form_factor))
-          return false;
-        if (!checkCheckboxFilter("eccFilter", p.specs?.ecc)) return false;
-        if (!checkCheckboxFilter("registeredFilter", p.specs?.registered))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "ramManufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "heatSpreaderFilter",
-            p.specs?.heat_spreader === true
-              ? "Yes"
-              : p.specs?.heat_spreader === false
-              ? "No"
-              : null
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "rgbFilter",
-            p.specs?.rgb === true ? "Yes" : p.specs?.rgb === false ? "No" : null
-          )
-        )
-          return false;
-        break;
-
-      case "storage":
-        if (!checkCheckboxFilter("storageTypeFilter", p.specs?.type))
-          return false;
-        if (
-          !checkCheckboxFilter("storageFormFactorFilter", p.specs?.form_factor)
-        )
-          return false;
-        if (!checkCheckboxFilter("storageInterfaceFilter", p.specs?.interface))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "storageManufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "nvmeFilter",
-            p.specs?.nvme === true
-              ? "Yes"
-              : p.specs?.nvme === false
-              ? "No"
-              : null
-          )
-        )
-          return false;
-        break;
-
-      case "psu":
-        if (!checkCheckboxFilter("psuFormFactorFilter", p.specs?.form_factor))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "efficiencyRatingFilter",
-            p.specs?.efficiency_rating
-          )
-        )
-          return false;
-        if (!checkCheckboxFilter("modularFilter", p.specs?.modular))
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "psuManufacturerFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        break;
-
-      case "monitor":
-        if (
-          !checkCheckboxFilter(
-            "monitorBrandFilter",
-            p.specs?.metadata?.manufacturer
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "refreshRateFilter",
-            String(p.specs?.refresh_rate)
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter("screenSizeFilter", String(p.specs?.screen_size))
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "verticalResFilter",
-            String(getNestedValue(p.specs, "resolution.verticalRes"))
-          )
-        )
-          return false;
-        if (
-          !checkCheckboxFilter(
-            "horizontalResFilter",
-            String(getNestedValue(p.specs, "resolution.horizontalRes"))
-          )
-        )
-          return false;
-        break;
+    // Apply dynamic checkbox filters for the current category
+    if (activeConfig) {
+      for (const [filterKey, specsPath] of Object.entries(
+        activeConfig.filters
+      )) {
+        const productValue = getNestedValue(p.specs, specsPath);
+        if (!checkCheckboxFilter(filterKey, productValue)) return false;
+      }
     }
-
     return true;
   });
 
-  switch (sortBySelect) {
+  // Sorting
+  const sortBy = document.getElementById("sortBySelect")?.value ?? "default";
+  switch (sortBy) {
     case "priceAsc":
-      prods.sort((a, b) => (a.prices?.Ekua ?? 0) - (b.prices?.Ekua ?? 0));
+      prods.sort(
+        (a, b) => (a.prices?.Ekua ?? Infinity) - (b.prices?.Ekua ?? Infinity)
+      );
       break;
     case "priceDesc":
-      prods.sort((a, b) => (b.prices?.Ekua ?? 0) - (a.prices?.Ekua ?? 0));
+      prods.sort(
+        (a, b) => (b.prices?.Ekua ?? -Infinity) - (a.prices?.Ekua ?? -Infinity)
+      );
       break;
-    // default - без сортировки или по дефолту
+    // Add more sorting options if needed (e.g., by name, by rating)
+    // case "nameAsc":
+    //   prods.sort((a, b) => (getNestedValue(a.specs, "metadata.name") || "").localeCompare(getNestedValue(b.specs, "metadata.name") || ""));
+    //   break;
     default:
-      // Оставляем порядок как есть или можно добавить дефолтную сортировку
+      // Default sort: items with price first, then by name or leave as is
+      prods.sort((a, b) => {
+        const priceA = a.prices?.Ekua;
+        const priceB = b.prices?.Ekua;
+        if (priceA != null && priceB == null) return -1;
+        if (priceA == null && priceB != null) return 1;
+        return 0; // Or add secondary sort criteria
+      });
       break;
   }
 
-  // Сортируем: сначала с ценой, потом без
-  const withPrice = prods.filter((p) => p.prices?.Ekua != null);
-  const withoutPrice = prods.filter((p) => p.prices?.Ekua == null);
+  filteredProducts = prods;
 
-  filteredProducts = [...withPrice, ...withoutPrice];
-
-  // после расчёта filteredProducts
   const countEl = document.getElementById("productsCount");
   if (countEl) {
-    countEl.textContent = `${filteredProducts.length} Compatible Products`;
+    countEl.textContent = `${filteredProducts.length} Product${
+      filteredProducts.length === 1 ? "" : "s"
+    } Found`;
   }
-  setCurrentPage(1);
+  setCurrentPage(1); // Reset to page 1 whenever filters change
   renderProductsPage(filteredProducts);
 }
 
-function checkCheckboxFilter(containerId, value) {
-  if (value == null) return true;
-  const checked = getCheckedValues(containerId);
-  if (checked.length === 0) return true;
+/**
+ * Checks if a product's value matches any of the checked values for a given checkbox filter.
+ * @param {string} checkboxContainerId - The ID of the div containing the checkbox group.
+ * @param {*} productValue - The value from the product to check. Can be string, number, boolean, or array.
+ * @returns {boolean} True if the product matches the filter, false otherwise.
+ */
+function checkCheckboxFilter(checkboxContainerId, productValue) {
+  const checkedValues = getCheckedValues(checkboxContainerId);
+  if (checkedValues.length === 0) return true; // If no checkboxes are checked for this filter, all products pass
 
-  let valStr =
-    typeof value === "boolean" ? (value ? "Yes" : "No") : String(value);
+  let pValueStr;
+  if (
+    productValue === undefined ||
+    productValue === null ||
+    productValue === ""
+  ) {
+    // If product has no value for this spec, it only passes if "Any" or no specific value is checked.
+    // This behavior might need adjustment based on desired logic for missing specs.
+    // For now, if a filter is active (checkedValues.length > 0), and productValue is null/undefined, it fails.
+    return false;
+  }
 
-  return checked.includes(valStr);
+  if (Array.isArray(productValue)) {
+    // If product spec is an array (e.g. CPU Cooler Sockets)
+    return productValue.some((item) => checkedValues.includes(String(item)));
+  } else if (typeof productValue === "boolean") {
+    pValueStr = productValue ? "Yes" : "No";
+  } else {
+    pValueStr = String(productValue);
+  }
+
+  return checkedValues.includes(pValueStr);
 }

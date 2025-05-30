@@ -5,24 +5,51 @@ const API = {
   create: "/api/configs",
   load: (id) => `/api/configs/${id}`,
   update: (id) => `/api/configs/${id}`,
+  component: (id) => `/api/components/${id}`,
 };
 
 let currentBuildId = null;
 let isSaving = false;
-export const selectedParts = {};
+export const selectedParts = {}; // Stores { category: productObject }
 
-const overlay = document.getElementById("quickAddOverlay");
-const buildName = document.getElementById("build-name");
+// DOM Elements
+const mainBuildLoaderOverlay = document.getElementById(
+  "mainBuildLoaderOverlay"
+);
+const buildNameElement = document.getElementById("build-name"); // Renamed for clarity
 const buildSelector = document.getElementById("build-selector");
 const newBuildBtn = document.getElementById("new-build");
 const totalPriceSpan = document.getElementById("totalPrice");
 const compatibilitySpan = document.getElementById("compatibility");
 const compicon = document.getElementById("compicon");
 const totalTdpSpan = document.getElementById("totalTdp");
-const mark3dSpan = document.getElementById("mark3d");
 const buildDateSpan = document.getElementById("build-date");
 const buildAuthorSpan = document.getElementById("build-author");
 
+// Gemini Feature Elements
+const generateDescriptionBtn = document.getElementById(
+  "generateDescriptionBtn"
+);
+const descriptionLoader = document.getElementById("descriptionLoader");
+const buildDescriptionOutput = document.getElementById(
+  "buildDescriptionOutput"
+);
+
+/**
+ * Shows or hides the main build loader.
+ * @param {boolean} show - True to show, false to hide.
+ */
+function toggleMainLoader(show) {
+  if (mainBuildLoaderOverlay) {
+    mainBuildLoaderOverlay.style.display = show ? "flex" : "none";
+  }
+}
+
+/**
+ * Checks compatibility between selected PC parts.
+ * @param {object} parts - An object журналирования selected parts, e.g., { CPU: cpuProduct, Motherboard: mbProduct }.
+ * @returns {boolean} True if compatible, false otherwise.
+ */
 export function checkCompatibility(parts) {
   const cpu = parts["CPU"];
   const motherboard = parts["Motherboard"];
@@ -31,13 +58,7 @@ export function checkCompatibility(parts) {
   const pcCase = parts["PCCase"];
   const cpuCooler = parts["CPUCooler"];
   const gpu = parts["GPU"];
-  const storage = parts["Storage"];
-  const networkCard = parts["NetworkCard"];
-  const caseFan = parts["CaseFan"];
-  const monitor = parts["Monitor"];
-  const soundCard = parts["SoundCard"];
 
-  // Сравнение строк без учета регистра и лишних пробелов
   function eqIgnoreCase(a, b) {
     return (
       String(a || "")
@@ -49,35 +70,35 @@ export function checkCompatibility(parts) {
     );
   }
 
-  const totalTdpElement = document.getElementById("totalTdp");
-  let totalTdp = totalTdpElement ? parseInt(totalTdpElement.textContent) : 0;
-  totalTdp += 50; // Добавляем запас в 50W для других компонентов
+  let currentTotalTdp = 0;
+  Object.values(parts).forEach((p) => {
+    if (p && p.specs) {
+      let tdpVal =
+        typeof p.specs.tdp === "number"
+          ? p.specs.tdp
+          : typeof p.specs.specifications?.tdp === "number"
+          ? p.specs.specifications.tdp
+          : { Motherboard: 70, RAM: 15, CPUCooler: 5, Storage: 10 }[
+              p.category
+            ] || 0;
+      currentTotalTdp += tdpVal;
+    }
+  });
+  currentTotalTdp += 50;
 
-  // 1. CPU & Motherboard: сокеты должны совпадать
   if (cpu && motherboard) {
     const cpuSocket = cpu.specs?.socket;
     const mbSocket = motherboard.specs?.socket;
-    if (!cpuSocket || !mbSocket || !eqIgnoreCase(cpuSocket, mbSocket))
+    if (cpuSocket && mbSocket && !eqIgnoreCase(cpuSocket, mbSocket))
       return false;
-
-    // Проверка поддержки CPU chipset материнской платой
-    if (cpu.specs?.chipset && motherboard.specs?.chipset) {
-      if (!eqIgnoreCase(cpu.specs.chipset, motherboard.specs.chipset)) {
-        // Если чипсеты не совпадают — несовместимо
-        return false;
-      }
-    }
   }
 
-  // 2. Motherboard & RAM: тип, форм-фактор памяти и поддержка частоты должны совпадать
   if (ram && motherboard) {
     const ramType = ram.specs?.ram_type || ram.specs?.type;
     const mbRamType =
       motherboard.specs?.memory?.ram_type || motherboard.specs?.ram_type;
-    if (!ramType || !mbRamType || !eqIgnoreCase(ramType, mbRamType))
-      return false;
+    if (ramType && mbRamType && !eqIgnoreCase(ramType, mbRamType)) return false;
 
-    // Проверка Registered и ECC RAM
     if (
       typeof ram.specs?.registered === "boolean" &&
       typeof motherboard.specs?.supports_registered_ram === "boolean"
@@ -92,144 +113,78 @@ export function checkCompatibility(parts) {
       if (ram.specs.ecc && !motherboard.specs.supports_ecc_ram) return false;
     }
 
-    // Проверка максимальной емкости RAM
-    if (ram.specs?.capacity_gb && motherboard.specs?.memory?.max) {
-      if (ram.specs.capacity_gb > motherboard.specs?.memory?.max) return false;
-    }
-    if (motherboard.specs?.memory?.max && ram.specs?.capacity_gb) {
-      if (ram.specs.capacity_gb > motherboard.specs?.memory?.max) return false;
-    }
+    const totalRamCapacity = ram.specs?.capacity;
+    const mbMaxRam = motherboard.specs?.memory?.max_capacity_gb;
+    if (totalRamCapacity && mbMaxRam && totalRamCapacity > mbMaxRam)
+      return false;
+
+    const ramModules = ram.specs?.modules?.quantity || 1;
+    const mbRamSlots = motherboard.specs?.memory?.slots;
+    if (mbRamSlots && ramModules > mbRamSlots) return false;
   }
-  // 3. CPU Cooler & CPU: поддержка сокета кулером
+
   if (cpuCooler && cpu) {
     const coolerSockets = cpuCooler.specs?.cpu_sockets || [];
     const cpuSocket = cpu.specs?.socket;
     if (
+      cpuSocket &&
       coolerSockets.length > 0 &&
       !coolerSockets.some((s) => eqIgnoreCase(s, cpuSocket))
     )
       return false;
 
-    // Проверка высоты кулера и ограничения корпуса
-    if (
-      pcCase?.specs?.max_cpu_cooler_height &&
-      cpuCooler.specs?.height &&
-      cpuCooler.specs.height > pcCase.specs.max_cpu_cooler_height
-    )
-      return false;
+    if (pcCase?.specs?.max_cpu_cooler_height_mm && cpuCooler.specs?.height_mm) {
+      if (cpuCooler.specs.height_mm > pcCase.specs.max_cpu_cooler_height_mm)
+        return false;
+    }
   }
 
-  // 4. PC Case & Motherboard: поддержка форм-фактора
   if (pcCase && motherboard) {
     const caseFormFactorRaw = pcCase.specs?.form_factor || "";
     const mbFormFactor = motherboard.specs?.form_factor;
-    if (!caseFormFactorRaw || !mbFormFactor) return false;
 
-    const caseFormFactors = caseFormFactorRaw.toLowerCase().split(/,\s*/);
-    if (!caseFormFactors.includes(mbFormFactor.toLowerCase())) return false;
+    if (mbFormFactor) {
+      let caseSupportsMb = false;
+      if (Array.isArray(caseFormFactorRaw)) {
+        caseSupportsMb = caseFormFactorRaw.some((ff) =>
+          eqIgnoreCase(ff, mbFormFactor)
+        );
+      } else if (typeof caseFormFactorRaw === "string") {
+        const caseFormFactors = caseFormFactorRaw.toLowerCase().split(/,\s*/);
+        caseSupportsMb = caseFormFactors.includes(mbFormFactor.toLowerCase());
+      }
+      if (!caseSupportsMb) return false;
+    }
 
-    // Проверка длины GPU
-    const maxGpuLength = pcCase.specs?.max_video_card_length;
-    if (maxGpuLength && gpu?.specs?.length && gpu.specs.length > maxGpuLength)
+    const maxGpuLength = pcCase.specs?.max_video_card_length_mm;
+    if (
+      gpu?.specs?.length_mm &&
+      maxGpuLength &&
+      gpu.specs.length_mm > maxGpuLength
+    )
       return false;
   }
 
-  // 5. PSU: мощность должна покрывать TDP CPU+GPU (+ запас)
   if (psu) {
     const psuWattage = psu.specs?.wattage;
-    if (psuWattage && totalTdp && psuWattage < totalTdp) return false; // Сравнение PSU с totalTdp
-  }
-
-  // 6. Storage & Motherboard: интерфейс и форм-фактор
-  if (storage && motherboard) {
-    const storageInterface = storage.specs?.interface;
-    const mbStorageInterfaces = motherboard.specs?.storage_interfaces || [];
-
-    if (
-      storageInterface &&
-      mbStorageInterfaces.length > 0 &&
-      !mbStorageInterfaces.some((intf) => eqIgnoreCase(intf, storageInterface))
-    )
-      return false;
-
-    const storageFormFactor = storage.specs?.form_factor;
-    const mbStorageFormFactors =
-      motherboard.specs?.supported_storage_form_factors || [];
-
-    if (
-      storageFormFactor &&
-      mbStorageFormFactors.length > 0 &&
-      !mbStorageFormFactors.some((f) => eqIgnoreCase(f, storageFormFactor))
-    )
+    if (psuWattage && currentTotalTdp && psuWattage < currentTotalTdp)
       return false;
   }
-
-  // 8. NetworkCard & Motherboard: проверка интерфейса (например, PCIe)
-  if (networkCard && motherboard) {
-    const netInterface = networkCard.specs?.interface;
-    const mbPcieSlots = motherboard.specs?.pcie_slots || [];
-    if (
-      netInterface &&
-      mbPcieSlots.length > 0 &&
-      !mbPcieSlots.some((slot) => eqIgnoreCase(slot.type, netInterface))
-    )
-      return false;
-  }
-
-  // 9. CaseFan & PC Case: проверка размера вентилятора и поддержки корпуса
-  if (caseFan && pcCase) {
-    const fanSize = caseFan.specs?.size_mm;
-    const supportedFanSizesRaw = pcCase.specs?.supported_fan_sizes_mm || "";
-    if (fanSize && supportedFanSizesRaw) {
-      const supportedFanSizes = supportedFanSizesRaw
-        .toString()
-        .toLowerCase()
-        .split(/,\s*/);
-      if (!supportedFanSizes.includes(String(fanSize).toLowerCase()))
-        return false;
-    }
-  }
-
-  // 11. SoundCard & Motherboard: проверка интерфейса (PCIe, USB)
-  if (soundCard && motherboard) {
-    const soundInterface = soundCard.specs?.interface;
-    const mbPcieSlots = motherboard.specs?.pcie_slots || [];
-    if (
-      soundInterface &&
-      mbPcieSlots.length > 0 &&
-      !mbPcieSlots.some((slot) => eqIgnoreCase(slot.type, soundInterface))
-    )
-      return false;
-  }
-
-  // 12. Проверка поддержки RGB (если нужно)
-  // if (
-  //   rgbComponent && motherboard && motherboard.specs?.supports_rgb !== undefined
-  // ) {
-  //   if (rgbComponent.specs.rgb && !motherboard.specs.supports_rgb) return false;
-  // }
-
-  // 13. Проверка количества слотов RAM и их совместимости
-  if (motherboard && ram) {
-    if (
-      typeof motherboard.specs?.memory?.slots === "number" &&
-      typeof ram.specs?.modules?.quantity === "number"
-    ) {
-      if (ram.specs.modules?.quantity > motherboard.specs.memory?.slots)
-        return false;
-    }
-  }
-
   return true;
 }
 
-function getBuildTitle(specs) {
+/**
+ * Generates a display title for a product.
+ * @param {object} specs - The product's specifications object.
+ * @returns {string} The display title.
+ */
+function getProductDisplayTitle(specs) {
+  if (!specs) return "Невідомий компонент";
   return (
-    [specs.manufacturer, specs.series, specs.model, specs.metadata?.name]
-      .filter(Boolean)
-      .join(" ") ||
-    specs.id ||
-    "Unnamed"
+    specs.metadata?.name || // Prefer metadata name
+    [specs.manufacturer, specs.series, specs.model].filter(Boolean).join(" ") ||
+    specs.opendb_id ||
+    "Компонент без назви"
   );
 }
 
@@ -238,65 +193,112 @@ function getBuildImage(product) {
 }
 
 function getBuyLink(product) {
-  return product?.storeIds?.Ekua;
+  return product?.storeUrls?.Ekua || product?.storeIds?.Ekua;
 }
 
+/**
+ * Updates total price, TDP, and compatibility status in the UI.
+ */
 function updateTotal() {
   const sumPrice = Object.values(selectedParts).reduce((sum, p) => {
-    const prices = Object.values(p.prices || {}).filter(
-      (v) => typeof v === "number"
-    );
-    return sum + (prices.length ? Math.min(...prices) : 0);
+    if (!p || !p.prices) return sum;
+    const price =
+      p.prices.Ekua ??
+      Object.values(p.prices).find((pr) => typeof pr === "number");
+    return sum + (typeof price === "number" ? price : 0);
   }, 0);
 
   totalPriceSpan.textContent = sumPrice.toFixed(2).replace(".", ",");
 
-  const sumTdp = Object.values(selectedParts).reduce((sum, p) => {
-    if (!p.specs) return sum;
-    let tdpVal =
-      typeof p.specs.tdp === "number"
-        ? p.specs.tdp
-        : typeof p.specs.specifications?.tdp === "number"
-        ? p.specs.specifications.tdp
-        : {
-            Motherboard: 70,
-            RAM: 28.8,
-            CPUCooler: 15,
-            Storage: 10,
-          }[p.category] || 0;
-    return sum + tdpVal;
-  }, 0);
-
+  let sumTdp = 0;
+  Object.values(selectedParts).forEach((p) => {
+    if (p && p.specs) {
+      let tdpVal =
+        typeof p.specs.tdp === "number"
+          ? p.specs.tdp
+          : typeof p.specs.specifications?.tdp === "number"
+          ? p.specs.specifications.tdp
+          : { Motherboard: 70, RAM: 15, CPUCooler: 5, Storage: 10 }[
+              p.category
+            ] || 0;
+      sumTdp += tdpVal;
+    }
+  });
+  sumTdp += 50;
   totalTdpSpan.textContent = sumTdp;
 
-  // Выводим реальный статус совместимости
   const compatible = checkCompatibility(selectedParts);
-  if (compatible) {
-    compatibilitySpan.textContent = "Compatible";
-    compatibilitySpan.style.color = "#2196f3";
-  } else {
-    compatibilitySpan.textContent = "Incompatible";
-    compatibilitySpan.style.color = "#f44336";
-    compicon.style.color = "#f44336";
+  if (compatibilitySpan && compicon) {
+    if (compatible) {
+      compatibilitySpan.textContent = "Сумісно";
+      compatibilitySpan.style.color = "var(--success)";
+      compicon.className = "fa fa-check-circle";
+      compicon.style.color = "var(--success)";
+    } else {
+      compatibilitySpan.textContent = "Несумісно";
+      compatibilitySpan.style.color = "var(--error-color)";
+      compicon.className = "fa fa-times-circle";
+      compicon.style.color = "var(--error-color)";
+    }
   }
+
+  const currentBuildNameDisplay = document.getElementById("current-build-name");
+  const currentBuildPriceDisplay = document.getElementById(
+    "current-build-price"
+  );
+  if (currentBuildNameDisplay && buildNameElement)
+    currentBuildNameDisplay.textContent = buildNameElement.textContent;
+  if (currentBuildPriceDisplay)
+    currentBuildPriceDisplay.textContent = `₴ ${sumPrice
+      .toFixed(2)
+      .replace(".", ",")}`;
 }
 
+/**
+ * Renders a selected part in its category section.
+ * @param {string} category - The category of the part.
+ * @param {object} product - The product object.
+ */
 function renderPart(category, product) {
+  if (!product || !product.specs) {
+    console.warn(
+      `Продукт або його характеристики для категорії "${category}" не визначені.`
+    );
+    delete selectedParts[category];
+    const container = document.querySelector(
+      `.part-category[data-cat="${category}"]`
+    );
+    if (container) {
+      container.querySelectorAll(".selected-part").forEach((el) => el.remove());
+      const addBtn = container.querySelector(".add-btn");
+      if (addBtn) {
+        addBtn.textContent = `+ Add ${
+          container.querySelector("h3")?.textContent || category
+        }`;
+        addBtn.classList.remove("swap-btn");
+      }
+    }
+    updateTotal();
+    return;
+  }
   selectedParts[category] = product;
   const container = document.querySelector(
     `.part-category[data-cat="${category}"]`
   );
+  if (!container) return;
 
   container.querySelectorAll(".selected-part").forEach((el) => el.remove());
 
   const addBtn = container.querySelector(".add-btn");
-  addBtn.textContent = "Swap Part";
-  addBtn.classList.add("swap-btn");
+  if (addBtn) {
+    addBtn.textContent = "Замінити";
+    addBtn.classList.add("swap-btn");
+  }
 
-  const title = getBuildTitle(product.specs);
+  const title = getProductDisplayTitle(product.specs);
   const imgUrl = getBuildImage(product);
   const price = product.prices?.Ekua ?? 0;
-  const link = getBuyLink(product);
+  const buyLink = getBuyLink(product);
 
   const partDiv = document.createElement("div");
   partDiv.className = "selected-part";
@@ -305,160 +307,289 @@ function renderPart(category, product) {
     <div class="sp-info">
       <div class="sp-title multiline-truncate-part">${title}</div>
       <div class="sp-buy-sec">
-        <div class="sp-price"><p>${price}₴</p></div>
+        <div class="sp-price"><p>₴${price
+          .toFixed(2)
+          .replace(".", ",")}</p></div>
         <div class="sp-actions">
           ${
-            link
-              ? `<a href="${link}" target="_blank" class="sp-buy">buy</a>`
-              : ""
+            buyLink
+              ? `<a href="${buyLink}" target="_blank" rel="noopener noreferrer" class="sp-buy">Купити</a>`
+              : '<span class="sp-buy-na" style="font-size: 0.8em; color: #999;">N/A</span>'
           }
-          <button class="sp-remove" title="Remove">&times;</button>
+          <button class="sp-remove" title="Видалити">&times;</button>
         </div>
       </div>
     </div>
   `;
-
   container.append(partDiv);
   updateTotal();
 }
 
+// Event Listeners for parts management
 document.body.addEventListener("click", (e) => {
-  // Удаление детали
   if (e.target.matches(".sp-remove")) {
-    const cat = e.target.closest(".part-category").dataset.cat;
+    const catElement = e.target.closest(".part-category");
+    if (!catElement) return;
+    const cat = catElement.dataset.cat;
     delete selectedParts[cat];
-    e.target.closest(".selected-part").remove();
+    e.target.closest(".selected-part")?.remove();
 
-    const container = document.querySelector(
-      `.part-category[data-cat="${cat}"]`
-    );
-    const addBtn = container.querySelector(".add-btn");
-    addBtn.textContent = `+ Add ${container.querySelector("h3").textContent}`;
-    addBtn.classList.remove("swap-btn");
-
+    const addBtn = catElement.querySelector(".add-btn");
+    if (addBtn) {
+      const categoryTitle =
+        catElement.querySelector("h3")?.textContent?.trim() || cat;
+      addBtn.textContent = `+ Add ${categoryTitle}`;
+      addBtn.classList.remove("swap-btn");
+    }
     updateTotal();
-    window.dispatchEvent(new Event("buildUpdated"));
-  }
-
-  // Открытие QuickAdd при замене детали
-  if (e.target.matches(".swap-btn")) {
-    overlay.classList.add("active");
+    window.dispatchEvent(new Event("buildUpdated")); // Notify that build has changed
   }
 });
 
 window.addEventListener("add-component", ({ detail }) => {
-  renderPart(detail.category, detail.product);
-  window.dispatchEvent(new Event("buildUpdated"));
+  if (detail && detail.category && detail.product) {
+    renderPart(detail.category, detail.product);
+    window.dispatchEvent(new Event("buildUpdated"));
+  }
 });
 
 function getCurrentPartsData() {
-  return Object.values(selectedParts).map((p) => p.opendb_id);
+  return Object.values(selectedParts)
+    .map((p) => p.opendb_id)
+    .filter((id) => id);
 }
 
+/**
+ * Loads the list of saved builds for the current user.
+ */
 async function loadBuildList() {
-  const token = localStorage.getItem("token");
-  const res = await fetch(API.list, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const list = await res.json();
-  buildSelector.innerHTML = list
-    .map((b) => `<option value="${b._id}">${b.name}</option>`)
-    .join("");
-}
-
-async function loadBuild(id) {
-  if (!id) return;
-  const token = localStorage.getItem("token");
-  const res = await fetch(API.load(id), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const cfg = await res.json();
-
-  currentBuildId = cfg._id;
-  buildName.textContent = cfg.name;
-
-  buildDateSpan.textContent = new Date(cfg.createdAt).toLocaleDateString(
-    "en-US",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
+  toggleMainLoader(true);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      buildSelector.innerHTML = '<option value="">Спочатку увійдіть</option>';
+      return;
     }
-  );
-  buildAuthorSpan.textContent = "Anonymous";
-
-  Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
-  document.querySelectorAll(".selected-part").forEach((el) => el.remove());
-  document.querySelectorAll(".part-category").forEach((cat) => {
-    const title = cat.querySelector("h3").textContent.trim();
-    cat.querySelector(".add-btn").textContent = `+ Add ${title}`;
-  });
-
-  const products = await Promise.all(
-    cfg.components.map((cid) =>
-      fetch(`/api/components/${cid}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json())
-    )
-  );
-
-  products.forEach((p) => renderPart(p.category, p));
-  updateTotal();
+    const res = await fetch(API.list, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok)
+      throw new Error(`Не вдалося завантажити список збірок: ${res.status}`);
+    const list = await res.json();
+    buildSelector.innerHTML = list
+      .map((b) => `<option value="${b._id}">${b.name}</option>`)
+      .join("");
+    if (list.length === 0) {
+      buildSelector.innerHTML = '<option value="">Збірок не знайдено</option>';
+    }
+  } catch (error) {
+    console.error("Помилка завантаження списку збірок:", error);
+    buildSelector.innerHTML = '<option value="">Помилка завантаження</option>';
+  } finally {
+    toggleMainLoader(false);
+  }
 }
 
+/**
+ * Loads a specific build by its ID.
+ * @param {string} id - The ID of the build to load.
+ */
+async function loadBuild(id) {
+  if (!id) {
+    Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
+    document.querySelectorAll(".selected-part").forEach((el) => el.remove());
+    document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
+      const catElement = btn.closest(".part-category");
+      const categoryTitle =
+        catElement?.querySelector("h3")?.textContent?.trim() ||
+        catElement?.dataset.cat ||
+        "Part";
+      btn.textContent = `+ Add ${categoryTitle}`;
+      btn.classList.remove("swap-btn");
+    });
+    if (buildNameElement) buildNameElement.textContent = "Нова збірка";
+    if (buildDateSpan)
+      buildDateSpan.textContent = new Date().toLocaleDateString("uk-UA", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    if (buildAuthorSpan) buildAuthorSpan.textContent = "Ви";
+    updateTotal();
+    if (buildDescriptionOutput) buildDescriptionOutput.value = ""; // Clear description for new/empty build
+    return;
+  }
+  toggleMainLoader(true);
+  if (buildDescriptionOutput) buildDescriptionOutput.value = ""; // Clear previous description
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const res = await fetch(API.load(id), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok)
+      throw new Error(`Не вдалося завантажити збірку: ${res.status}`);
+    const cfg = await res.json();
+
+    currentBuildId = cfg._id;
+    if (buildNameElement) buildNameElement.textContent = cfg.name;
+    if (buildDateSpan)
+      buildDateSpan.textContent = new Date(
+        cfg.createdAt || Date.now()
+      ).toLocaleDateString("uk-UA", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    if (buildAuthorSpan)
+      buildAuthorSpan.textContent = cfg.authorName || "Анонім";
+
+    Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
+    document.querySelectorAll(".selected-part").forEach((el) => el.remove());
+    document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
+      const catElement = btn.closest(".part-category");
+      const categoryTitle =
+        catElement?.querySelector("h3")?.textContent?.trim() ||
+        catElement?.dataset.cat ||
+        "Part";
+      btn.textContent = `+ Add ${categoryTitle}`;
+      btn.classList.remove("swap-btn");
+    });
+
+    if (cfg.components && cfg.components.length > 0) {
+      const productsPromises = cfg.components.map((cid) =>
+        fetch(API.component(cid), {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((r) => {
+          if (!r.ok) {
+            console.error(
+              `Не вдалося завантажити компонент ${cid}: ${r.status}`
+            );
+            return null;
+          }
+          return r.json();
+        })
+      );
+      const products = (await Promise.all(productsPromises)).filter((p) => p); // Filter out nulls from failed fetches
+      products.forEach((p) => {
+        if (p && p.category) renderPart(p.category, p);
+        else console.warn("Отримано недійсний або неповний компонент:", p);
+      });
+    }
+    if (cfg.description && buildDescriptionOutput) {
+      // Load saved description
+      buildDescriptionOutput.value = cfg.description;
+    }
+    updateTotal();
+  } catch (error) {
+    console.error("Помилка завантаження збірки:", error);
+  } finally {
+    toggleMainLoader(false);
+  }
+}
+
+// Event listener for "New Build" button
 newBuildBtn.addEventListener("click", async () => {
-  const token = localStorage.getItem("token");
-  const res = await fetch(API.create, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ name: "Нова збірка", components: [] }),
-  });
-  const b = await res.json();
-  currentBuildId = b._id;
+  toggleMainLoader(true);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Будь ласка, увійдіть, щоб створити нову збірку.");
+      return;
+    }
+    const defaultBuildName =
+      "Нова збірка " +
+      new Date().toLocaleTimeString("uk-UA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    const res = await fetch(API.create, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name: defaultBuildName, components: [] }),
+    });
+    if (!res.ok)
+      throw new Error(`Не вдалося створити нову збірку: ${res.status}`);
+    const b = await res.json();
 
-  await loadBuildList();
-  buildSelector.value = b._id;
-  buildName.textContent = b.name;
-
-  Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
-  document.querySelectorAll(".selected-part").forEach((el) => el.remove());
-
-  updateTotal();
-  document.querySelectorAll(".part-category").forEach((cat) => {
-    const title = cat.querySelector("h3").textContent.trim();
-    cat.querySelector(".add-btn").textContent = `+ Add ${title}`;
-    cat.querySelector(".add-btn").classList.remove("swap-btn");
-  });
+    await loadBuildList();
+    buildSelector.value = b._id;
+    await loadBuild(b._id);
+    currentBuildId = b._id;
+  } catch (error) {
+    console.error("Помилка створення нової збірки:", error);
+    alert("Не вдалося створити нову збірку. Спробуйте ще раз.");
+  } finally {
+    toggleMainLoader(false);
+  }
 });
 
-buildSelector.addEventListener("change", () => loadBuild(buildSelector.value));
-
-buildName.addEventListener("blur", async () => {
-  const newName = buildName.textContent.trim() || "Без назви";
-  buildName.textContent = newName;
-  if (!currentBuildId) return;
-
-  const token = localStorage.getItem("token");
-  await fetch(API.update(currentBuildId), {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ name: newName }),
-  });
-
-  loadBuild(buildSelector.value);
-  loadBuildList();
+// Event listener for build selector change
+buildSelector.addEventListener("change", () => {
+  if (buildSelector.value) {
+    loadBuild(buildSelector.value);
+  }
 });
 
+// Event listener for build name edit
+if (buildNameElement) {
+  buildNameElement.addEventListener("blur", async () => {
+    const newName = buildNameElement.textContent.trim() || "Без назви";
+    buildNameElement.textContent = newName;
+    if (!currentBuildId) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const optionInSelector = buildSelector.querySelector(
+      `option[value="${currentBuildId}"]`
+    );
+    if (optionInSelector) {
+      optionInSelector.textContent = newName;
+    }
+    // Update current build name in sidebar
+    const currentBuildNameDisplay =
+      document.getElementById("current-build-name");
+    if (currentBuildNameDisplay) currentBuildNameDisplay.textContent = newName;
+
+    try {
+      await fetch(API.update(currentBuildId), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newName }), // Only send name if only name changed
+      });
+    } catch (error) {
+      console.error("Помилка оновлення назви збірки:", error);
+      // Optionally revert name if API call fails
+    }
+  });
+}
+
+// Auto-save build changes (components and description)
 window.addEventListener("buildUpdated", async () => {
   if (!currentBuildId || isSaving) return;
   isSaving = true;
   const token = localStorage.getItem("token");
+  if (!token) {
+    isSaving = false;
+    return;
+  }
+
+  const buildDataToSave = {
+    components: getCurrentPartsData(),
+    // description: buildDescriptionOutput ? buildDescriptionOutput.value : undefined // Save description too
+  };
+  // Only include description if the element exists and has a value
+  if (buildDescriptionOutput && buildDescriptionOutput.value.trim() !== "") {
+    buildDataToSave.description = buildDescriptionOutput.value.trim();
+  }
 
   try {
     await fetch(API.update(currentBuildId), {
@@ -467,21 +598,133 @@ window.addEventListener("buildUpdated", async () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ components: getCurrentPartsData() }),
+      body: JSON.stringify(buildDataToSave),
     });
   } catch (e) {
-    console.error("Auto-save error:", e);
+    console.error("Помилка автозбереження:", e);
   } finally {
     isSaving = false;
   }
 });
 
+/**
+ * Gemini API Integration: Generates a build description.
+ */
+async function handleGenerateDescription() {
+  if (!generateDescriptionBtn || !descriptionLoader || !buildDescriptionOutput)
+    return;
+
+  if (Object.keys(selectedParts).length === 0) {
+    buildDescriptionOutput.value =
+      "Будь ласка, додайте компоненти до збірки, щоб згенерувати опис.";
+    return;
+  }
+
+  generateDescriptionBtn.disabled = true;
+  descriptionLoader.style.display = "flex";
+  buildDescriptionOutput.value = ""; // Clear previous
+
+  const partNames = Object.values(selectedParts)
+    .map((part) => getProductDisplayTitle(part.specs))
+    .filter(
+      (name) =>
+        name && name !== "Невідомий компонент" && name !== "Компонент без назви"
+    );
+
+  if (partNames.length === 0) {
+    buildDescriptionOutput.value =
+      "Не вдалося отримати назви компонентів для генерації опису.";
+    descriptionLoader.style.display = "none";
+    generateDescriptionBtn.disabled = false;
+    return;
+  }
+
+  const prompt = `Створи коротке, привабливе та інформативне маркетингове описання для збірки ПК з наступними основними компонентами: ${partNames.join(
+    ", "
+  )}. Згадай, для яких завдань (наприклад, ігри, робота, навчання, творчість) ця збірка може підійти. Опис має бути на українській мові. Зроби його приблизно 2-4 речення.`;
+
+  try {
+    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+    const payload = { contents: chatHistory };
+    const apiKey = ""; // Canvas will provide this
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Помилка Gemini API:", errorData);
+      throw new Error(
+        `Помилка API: ${errorData.error?.message || response.status}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (
+      result.candidates &&
+      result.candidates.length > 0 &&
+      result.candidates[0].content &&
+      result.candidates[0].content.parts &&
+      result.candidates[0].content.parts.length > 0
+    ) {
+      const text = result.candidates[0].content.parts[0].text;
+      buildDescriptionOutput.value = text.trim();
+      window.dispatchEvent(new Event("buildUpdated")); // Trigger auto-save for the new description
+    } else {
+      console.error("Неочікувана структура відповіді від Gemini API:", result);
+      buildDescriptionOutput.value =
+        "Не вдалося згенерувати опис. Спробуйте ще раз.";
+    }
+  } catch (error) {
+    console.error("Помилка при генерації опису:", error);
+    buildDescriptionOutput.value = `Помилка: ${error.message}. Перевірте консоль для деталей.`;
+  } finally {
+    descriptionLoader.style.display = "none";
+    generateDescriptionBtn.disabled = false;
+  }
+}
+
+if (generateDescriptionBtn) {
+  generateDescriptionBtn.addEventListener("click", handleGenerateDescription);
+}
+
+// Initial load logic
 (async function init() {
   await loadBuildList();
-  if (buildSelector.options.length) {
-    buildSelector.value = buildSelector.options[0].value;
-    await loadBuild(buildSelector.value);
-  } else {
+  const urlParams = new URLSearchParams(window.location.search);
+  const configIdFromUrl = urlParams.get("config");
+
+  let initialBuildId = null;
+
+  if (
+    configIdFromUrl &&
+    buildSelector.querySelector(`option[value="${configIdFromUrl}"]`)
+  ) {
+    initialBuildId = configIdFromUrl;
+    buildSelector.value = configIdFromUrl;
+  } else if (buildSelector.options.length > 0 && buildSelector.value) {
+    initialBuildId = buildSelector.value;
+  }
+
+  if (initialBuildId) {
+    await loadBuild(initialBuildId);
+  } else if (localStorage.getItem("token")) {
     newBuildBtn.click();
+  } else {
+    if (buildNameElement) buildNameElement.textContent = "Увійдіть, щоб почати";
+    totalPriceSpan.textContent = "0";
+    if (compatibilitySpan) compatibilitySpan.textContent = "-";
+    totalTdpSpan.textContent = "0";
+    if (buildDateSpan) buildDateSpan.textContent = "-";
+    if (buildAuthorSpan) buildAuthorSpan.textContent = "-";
+    document
+      .querySelectorAll(".part-category .add-btn")
+      .forEach((btn) => (btn.disabled = true));
+    if (generateDescriptionBtn) generateDescriptionBtn.disabled = true;
   }
 })();

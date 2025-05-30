@@ -9,8 +9,15 @@
 </head>
 
 <body>
+    <div class="loader-overlay" id="savedListLoaderOverlay" style="display: none;">
+        <div class="loader"></div>
+        <p>Завантаження збережених збірок...</p>
+    </div>
+
     <h1>Збережені збірки</h1>
-    <div id="savedList">Завантаження…</div>
+    <div id="savedListContainer">
+        <div id="savedList">Завантаження…</div>
+    </div>
     <script type="module" src="/js/saved.js"></script>
 </body>
 

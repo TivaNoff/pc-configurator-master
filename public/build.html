@@ -16,11 +16,10 @@
 
 <body>
     <div class="app">
-        <!-- === Sidebar === -->
         <aside class="sidebar">
             <div class="sidebar-top">
                 <a href="/" class="logo">
-                    <img src="/img/logo.svg" alt="BuildCores" />
+                    <img src="/img/logo.svg" alt="BuildCores Logo" />
                     <span class="logo-text">BuildCores</span>
                     <span class="beta">BETA v0.8</span>
                 </a>
@@ -47,8 +46,8 @@
                 <ul>
                     <li><a href="/completed.html">Completed Builds</a></li>
                     <li><a href="/updates.html">Updates</a></li>
-                    <li><a href="https://discord.gg/…">Discord</a></li>
-                    <li><a href="https://reddit.com/r/…">Reddit</a></li>
+                    <li><a href="https://discord.gg/example" target="_blank" rel="noopener noreferrer">Discord</a></li>
+                    <li><a href="https://reddit.com/r/example" target="_blank" rel="noopener noreferrer">Reddit</a></li>
                 </ul>
             </div>
 
@@ -65,24 +64,21 @@
                 <a href="/login.html" id="login-link">Log In</a>
             </div>
         </aside>
-        <!-- === Main Content === -->
         <main class="main">
+            <div class="loader-overlay" id="mainBuildLoaderOverlay" style="display: none;">
+                <div class="loader"></div>
+                <p>Завантаження даних збірки...</p>
+            </div>
+
             <header class="build-header">
                 <div class="build-header-left">
-                    <!-- New Build + селектор -->
                     <button id="new-build">+ New Build</button>
                     <select id="build-selector"></select>
-
-
-
-                    <!-- Дата • Авторы -->
-
                 </div>
             </header>
 
             <section class="parts-list">
                 <div class="build-info">
-                    <!-- Информация о сборке -->
                     <div class="build-info-row">
                         <div class="meta-build-info">
                             <h1 id="build-name" contenteditable="true" title="Клікніть, щоб змінити назву">
@@ -92,23 +88,31 @@
                                 <span id="build-date">—</span> • <span id="build-author">—</span>
                             </div>
                         </div>
-                        <!-- Общая цена -->
                         <div class="info-item-wrapper">
                             <div class="info-item price">
                                 <i class="fa fa-solid fa-money-bill"></i>
                                 <span id="totalPrice">0</span> <span>₴</span>
                             </div>
-                            <!-- Совместимость (заглушка) -->
                             <div class="info-item compatible">
-                                <i class="fa fa-check-circle" id="compicon""></i>
+                                <i class="fa fa-check-circle" id="compicon"></i>
                                 <span id="compatibility">—</span>
                             </div>
-                            <!-- Суммарный TDP -->
                             <div class="info-item tdp">
                                 <i class="fa fa-bolt"></i>
                                 <span id="totalTdp">0</span> W
                             </div>
                         </div>
+                    </div>
+                    {/* */}
+                    <div class="build-description-generator">
+                        <button id="generateDescriptionBtn" class="gemini-feature-btn">✨ Згенерувати опис
+                            збірки</button>
+                        <div id="descriptionLoader" class="loader-inline" style="display: none;">
+                            <div class="loader-small"></div>
+                            <span>Генерація опису...</span>
+                        </div>
+                        <textarea id="buildDescriptionOutput" rows="4" placeholder="Тут з'явиться опис вашої збірки..."
+                            readonly></textarea>
                     </div>
                 </div>
                 <div class="part-category-titel">
@@ -192,16 +196,18 @@
         </main>
 
     </div>
-    <a href="https://www.flaticon.com/free-icons/computer" title="computer icons">Computer icons created by Pomicon
-        - Flaticon</a>
-    <!-- Quick Add Modal -->
+    <a href="https://www.flaticon.com/free-icons/computer" title="computer icons" style="display:none;">Computer icons
+        created by Pomicon - Flaticon</a>
+
     <div class="overlay" id="quickAddOverlay">
         <div class="modal">
-            <!-- 1) Фильтры -->
+            <div class="loader-container" id="quickAddLoader" style="display: none;">
+                <div class="loader"></div>
+                <p>Завантаження компонентів...</p>
+            </div>
+
             <aside class="filter-sidebar">
                 <h4>Filters</h4>
-
-                <!-- 1) Чекбоксы совместимости -->
                 <label>
                     <input type="checkbox" id="compatibilityOnly" checked />
                     Compatibility Only
@@ -211,30 +217,23 @@
                     3D Only
                 </label>
                 <hr />
-
-                <!-- 2) Ползунки цены -->
                 <div>
                     <h5>Price</h5>
                     <div class="price-filter">
                         <input type="range" id="priceMin" min="0" max="20000" step="100" value="0" />
                         <input type="range" id="priceMax" min="0" max="20000" step="100" value="20000" />
                         <div class="price-values">
-                            <span id="priceMinVal">$0</span>
-                            <span id="priceMaxVal">$20000</span>
+                            <span id="priceMinVal">₴0</span>
+                            <span id="priceMaxVal">₴20000</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- 3) Динамические категории фильтров (вставляются скриптом setup*FiltersHTML) -->
+                {/* */}
             </aside>
 
-
-            <!-- 2) Контейнер для хедера, сетки и пагинации -->
             <div class="quickadd-content">
-                <!-- Header Quick Add -->
                 <div class="quickadd-header">
-                    <div id="productsCount" class="products-count">
-                    </div>
+                    <div id="productsCount" class="products-count"></div>
                     <div class="qa-controls">
                         <label for="sortBySelect">
                             Sort by
@@ -247,9 +246,7 @@
                         <input id="component-search" type="text" placeholder="Search by name..." />
                     </div>
                 </div>
-
                 <section class="products-grid" id="productsGrid"></section>
-
                 <div class="quickadd-footer">
                     <div class="rows-per-page">
                         Rows per page
@@ -262,8 +259,6 @@
                     <div id="paginationControls" class="pagination-controls"></div>
                 </div>
             </div>
-
-            <!-- 3) Кнопка закрытия -->
             <button class="modal-close" id="closeQuickAdd">✕</button>
         </div>
     </div>
