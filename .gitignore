@@ -1,5 +1,6 @@
 # База OpenDB
 open-db/
+node_modules
 
 # IDE и ОС
 .vscode/
