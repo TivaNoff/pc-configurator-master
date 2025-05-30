@@ -1,6 +1,6 @@
 :root {
   --bg: #131314;
-  --bg-alt: #0f0f0f;
+  --bg-alt: #0a0a0a;
   --fg: #eee;
   --accent: #8b5cf6;
   --border: #333;
@@ -13,13 +13,12 @@
   padding: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  font-family: Inter, sans-serif;
 }
 body {
-  font-family: Inter, sans-serif;
   background: var(--bg);
-  color: var(--fg);
+  color: #e2e2e2;
   min-height: 100vh;
-  overflow: hidden;
 }
 
 /* Utility links and errors */
@@ -117,18 +116,29 @@ a:hover {
   flex: 1;
   padding: 1rem;
 }
-.part-category {
+.part-category,
+.part-category-titel {
   width: 830px;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 0.75rem;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  color: #979799;
 
   border-top: var(--border) solid 1px;
   border-left: var(--border) solid 1px;
   border-right: var(--border) solid 1px;
+}
+
+.part-category-titel {
+  flex-direction: row;
+}
+
+.part-category-titel h3 {
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .part-category:first-child {
@@ -139,22 +149,23 @@ a:hover {
   border-radius: 0 0 4px 4px;
 }
 
-body > div.app > main > section > div:nth-child(13) .part-category h3 {
-  width: 140px;
-  font-size: 1rem;
-  margin: 0;
-}
-
 .part-category .add-btn {
-  background: var(--accent);
-  border: none;
-  color: #fff;
+  background: #1e2024;
+  border: var(--border) 1px solid;
+  color: #b8b8b8;
+  font-weight: 500;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
   border-radius: 3px;
 }
 .part-category .add-btn:hover {
   opacity: 0.9;
+  color: #ffffff;
+}
+
+.part-category h3 {
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .swap-btn {
@@ -187,10 +198,12 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.3rem;
+  color: #e2e2e2;
 }
 .sp-price {
-  color: var(--accent);
-  font-size: 0.9rem;
+  color: #4caf50;
+  font-size: 1rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
   flex-direction: row-reverse;
@@ -207,7 +220,8 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
   color: #fff;
   padding: 0.2rem 0.6rem;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 5px;
+  font-size: 0.95rem;
 }
 .sp-buy:hover {
   opacity: 0.9;
@@ -421,12 +435,6 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
   margin: 0;
   padding: 0;
 }
-
-.app {
-  display: flex;
-  height: 100%;
-}
-
 /* ============= Sidebar ============= */
 
 .sidebar-top {
@@ -594,9 +602,9 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
 }
 #build-name {
   font-size: 24px;
-  color: #fff;
+  color: #e2e2e2;
   outline: none;
-  min-width: 200px;
+  min-width: 120px;
   cursor: text;
 }
 
@@ -612,13 +620,6 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
 
   align-items: left;
   position: relative;
-}
-
-.build-info-row .info-item {
-  display: flex;
-  align-items: center;
-  font-size: 0.95rem;
-  color: #ffffff;
 }
 
 .build-info-row .info-item i {
@@ -657,6 +658,17 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
 
 .info-item-wrapper {
   display: flex;
+  margin: 10px 0;
+}
+
+.price {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.tdp {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
 }
 
 .build-info {
@@ -664,8 +676,14 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
 }
 
 .info-item {
-  border: #ffffff solid 1px;
-  padding: 8px;
+  border: var(--border) solid 1px;
+  padding: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  letter-spacing: 0.04rem;
 }
 
 .meta-build-info {
@@ -674,7 +692,9 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
 }
 
 #build-name {
-  border: white solid 1px;
+  font-weight: 500;
+  font-size: 1.1rem;
+  border-radius: 4px;
 }
 
 .multiline-truncate {
@@ -697,6 +717,7 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
   display: flex;
   justify-content: space-between;
   width: -webkit-fill-available;
+  align-items: center;
 }
 
 .sp-buy-sec {
@@ -966,4 +987,9 @@ body > div.app > main > section > div:nth-child(13) .part-category h3 {
   font-size: 0.9rem;
   color: var(--fg);
   user-select: none;
+}
+
+.build-meta-text {
+  color: #979799;
+  font-size: 0.9rem;
 }

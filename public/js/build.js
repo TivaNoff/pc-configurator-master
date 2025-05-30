@@ -279,7 +279,6 @@ function updateTotal() {
     compatibilitySpan.style.color = "#f44336";
     compicon.style.color = "#f44336";
   }
-  mark3dSpan.textContent = "—";
 }
 
 function renderPart(category, product) {
