@@ -6,6 +6,16 @@ import {
   translatePage,
 } from "./localization.js";
 
+function getNestedValue(obj, path) {
+  if (!obj || typeof path !== "string") return undefined;
+  return path.split(".").reduce((acc, key) => {
+    if (acc && typeof acc === "object" && key in acc) {
+      return acc[key];
+    }
+    return undefined;
+  }, obj);
+}
+
 const API = {
   list: "/api/configs",
   create: "/api/configs",
@@ -46,7 +56,6 @@ const compatibilityAdvisorTriggerSection = document.getElementById(
   "compatibilityAdvisorTriggerSection"
 );
 
-// Gemini Response Modal Elements
 const geminiResponseModalOverlay = document.getElementById(
   "geminiResponseModalOverlay"
 );
@@ -61,7 +70,6 @@ const closeGeminiResponseModalBtn = document.getElementById(
   "closeGeminiResponseModal"
 );
 
-// Product Detail Modal Elements
 const productDetailModalOverlay = document.getElementById(
   "productDetailModalOverlay"
 );
@@ -80,8 +88,9 @@ const productDetailThumbnailsContainer = document.getElementById(
 const productDetailName = document.getElementById("productDetailName");
 const productDetailCategoryElement = document.getElementById(
   "productDetailCategoryValue"
-); // Changed ID to be more specific
+);
 const productDetail3DIcon = document.getElementById("productDetail3DIcon");
+let productDetailAddToBuildBtn;
 const productDetailMerchantsContainer = document.getElementById(
   "productDetailMerchants"
 );
@@ -90,9 +99,94 @@ const productDetailSpecsTableBody = document.querySelector(
 );
 
 /**
- * Shows dedicated product details in a modal overlay.
- * @param {object} product - The product object.
+ * Formats complex values (objects/arrays) for display in the specs table.
+ * @param {*} value - The value to format.
+ * @param {string} baseKeyPath - The full path to the key (e.g., "pcie_slots", "audio.chipset").
+ * @returns {string|null} A formatted string representation of the value, or null if the value should be expanded by displaySpecsRecursive.
  */
+function formatComplexValue(value, baseKeyPath) {
+  if (value === null || value === undefined) return "";
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "-"; // Отображаем прочерк для пустых массивов
+
+    // Специальная обработка для массивов объектов
+    const keySuffix = baseKeyPath.split(".").pop().toLowerCase(); // Последняя часть ключа
+
+    if (keySuffix.includes("pcie_slots") || keySuffix.includes("pci_e_slots")) {
+      return (
+        value
+          .map((slot) => {
+            let slotInfo = [];
+            if (slot.quantity) slotInfo.push(`${slot.quantity}x`);
+            if (slot.type) slotInfo.push(slot.type);
+            else if (slot.gen) slotInfo.push(`PCIe ${slot.gen}`);
+            if (slot.lanes) slotInfo.push(`x${slot.lanes}`);
+            return slotInfo.filter(Boolean).join(" ");
+          })
+          .filter(Boolean)
+          .join("; ") || "-"
+      );
+    }
+    if (keySuffix.includes("m_2_slots") || keySuffix.includes("m2_slots")) {
+      return (
+        value
+          .map((slot) => {
+            let slotInfo = `M.2`;
+            if (slot.key) slotInfo += ` Key-${slot.key}`;
+            if (slot.size) slotInfo += ` Size-${slot.size}`;
+            if (slot.interface) slotInfo += ` (${slot.interface})`;
+            return slotInfo;
+          })
+          .filter(Boolean)
+          .join("; ") || "-"
+      );
+    }
+    // Общая обработка массивов: если элементы - простые типы, соединяем их. Если объекты - возвращаем null для рекурсивной обработки.
+    if (value.every((item) => typeof item !== "object" || item === null)) {
+      return value.join(", ");
+    }
+    return null; // Сигнал для displaySpecsRecursive, что нужно развернуть этот массив объектов
+  }
+
+  if (typeof value === "object") {
+    // Специальная обработка для конкретных объектов, которые можно представить одной строкой
+    const keySuffix = baseKeyPath.split(".").pop().toLowerCase();
+
+    if (
+      keySuffix === "resolution" &&
+      value.horizontalRes &&
+      value.verticalRes
+    ) {
+      return `${value.horizontalRes}x${value.verticalRes}`;
+    }
+    if (keySuffix === "onboard_ethernet" && value.speed) {
+      let ethInfo = value.speed;
+      if (value.controller && value.controller.toLowerCase() !== "unknown")
+        ethInfo += ` (${value.controller})`;
+      return ethInfo;
+    }
+    // Для объекта audio, если мы хотим его развернуть, formatComplexValue должен вернуть null
+    // Если хотим одной строкой:
+    // if (keySuffix === 'audio' && value.chipset) {
+    //     let audioInfo = `${getTranslation('spec_key_audio_chipset')}: ${value.chipset}`;
+    //     if (value.channels) audioInfo += `, ${getTranslation('spec_key_audio_channels')}: ${value.channels}`;
+    //     return audioInfo;
+    // }
+    if (keySuffix.includes("clocks") && value.base) {
+      // Общая обработка для clocks
+      let clockStr = `Base: ${value.base}${value.unit || "GHz"}`;
+      if (value.boost)
+        clockStr += `, Boost: ${value.boost}${value.unit || "GHz"}`;
+      return clockStr;
+    }
+
+    // Если нет специального форматирования, возвращаем null, чтобы displaySpecsRecursive обработал его
+    return null;
+  }
+  return String(value); // Для простых типов
+}
+
 export function showProductDetails(product) {
   if (!product || !productDetailModalOverlay) {
     console.warn("showProductDetails: product or modal elements are undefined");
@@ -100,7 +194,7 @@ export function showProductDetails(product) {
   }
   const s = product.specs || {};
   const productName = getProductDisplayTitle(s);
-  const mainImgUrl = getBuildImage(product);
+  const primaryImageUrl = getBuildImage(product);
 
   if (productDetailModalTitleElement)
     productDetailModalTitleElement.textContent =
@@ -115,33 +209,45 @@ export function showProductDetails(product) {
       product.category ||
       getTranslation("category_na") ||
       "N/A";
-    productDetailCategoryElement.textContent = categoryText; // Directly set text content
+    productDetailCategoryElement.textContent = categoryText;
   }
   if (productDetail3DIcon) {
-    productDetail3DIcon.style.display = s.supports3D ? "inline" : "none";
+    productDetail3DIcon.style.display =
+      s.supports3D || product.supports3D ? "inline" : "none";
   }
 
   if (productDetailMainImage) {
-    productDetailMainImage.src = mainImgUrl;
+    productDetailMainImage.src = primaryImageUrl;
     productDetailMainImage.alt = productName;
   }
 
   if (productDetailThumbnailsContainer) {
     productDetailThumbnailsContainer.innerHTML = "";
-    const imageUrls =
+    let imageUrls = [];
+    if (
       product.images &&
       Array.isArray(product.images) &&
       product.images.length > 0
-        ? product.images
-        : [mainImgUrl];
+    ) {
+      imageUrls = product.images;
+    } else if (product.storeImg && typeof product.storeImg === "object") {
+      Object.values(product.storeImg).forEach((url) => {
+        if (typeof url === "string") imageUrls.push(url);
+      });
+    }
+    if (imageUrls.length === 0 && primaryImageUrl) {
+      imageUrls.push(primaryImageUrl);
+    }
+    imageUrls = [...new Set(imageUrls)];
 
     imageUrls.forEach((url, index) => {
+      if (!url) return;
       const thumb = document.createElement("img");
       thumb.src = url;
       thumb.alt = `${
         getTranslation("thumbnail_alt_prefix") || "Thumbnail for"
       } ${productName} ${index + 1}`;
-      if (index === 0) thumb.classList.add("active");
+      if (url === primaryImageUrl) thumb.classList.add("active");
       thumb.addEventListener("click", () => {
         if (productDetailMainImage) productDetailMainImage.src = url;
         productDetailThumbnailsContainer
@@ -151,18 +257,19 @@ export function showProductDetails(product) {
       });
       productDetailThumbnailsContainer.appendChild(thumb);
     });
+    if (imageUrls.length <= 1) {
+      productDetailThumbnailsContainer.style.display = "none";
+    } else {
+      productDetailThumbnailsContainer.style.display = "flex";
+    }
   }
 
   if (productDetailMerchantsContainer) {
     productDetailMerchantsContainer.innerHTML = "";
     let merchantsRendered = false;
-    if (product.prices && Object.keys(product.prices).length > 0) {
-      const priceEkua = product.prices?.Ekua;
-      const urlEkua =
-        product.storeUrls?.Ekua ||
-        (product.storeIds?.Ekua
-          ? `https://ek.ua/search/?kof=${product.storeIds.Ekua}`
-          : null);
+    if (product.prices?.Ekua !== undefined && product.prices?.Ekua !== null) {
+      const priceEkua = product.prices.Ekua;
+      const urlEkua = product.storeIds?.Ekua;
 
       if (typeof priceEkua === "number") {
         const merchantRow = document.createElement("div");
@@ -177,7 +284,11 @@ export function showProductDetails(product) {
                   .replace(".", ",")}</span>
                 ${
                   urlEkua
-                    ? `<a href="${urlEkua}" target="_blank" rel="noopener noreferrer" class="merchant-buy-btn">${getTranslation(
+                    ? `<a href="${
+                        urlEkua.startsWith("http")
+                          ? urlEkua
+                          : "https://ek.ua/ua/search/?kof=" + urlEkua
+                      }" target="_blank" rel="noopener noreferrer" class="merchant-buy-btn">${getTranslation(
                         "buy_button_text"
                       )}</a>`
                     : ""
@@ -212,118 +323,166 @@ export function showProductDetails(product) {
       "metadata",
       "compatible",
       "supports3D",
-      "manufacturer",
-      "series",
-      "model",
       "general_product_information",
       "images",
     ]);
 
     const specOrder = [
+      "manufacturer",
+      "series",
+      "model",
       "form_factor",
       "socket",
       "chipset",
-      "memory_type",
-      "ram_type",
-      "capacity",
-      "cores",
+      "cores.total",
       "threads",
-      "base_clock",
-      "boost_clock",
-      "memory_size",
+      "clocks.performance.base",
+      "clocks.performance.boost",
+      "memory",
+      "memory_type",
+      "speed",
+      "modules.quantity",
+      "modules.capacity_gb",
+      "cas_latency",
+      "capacity",
+      "type",
       "interface",
-      "length_mm",
-      "max_gpu_length_mm",
-      "max_cpu_cooler_height_mm",
+      "nvme",
       "wattage",
       "efficiency_rating",
       "modular",
-      "type",
-      "speed_mhz",
+      "length_mm",
+      "max_video_card_length",
+      "max_cpu_cooler_height_mm",
       "side_panel",
-      "power_supply",
-      "rpm_min",
-      "rpm_max",
-      "noise_level_min",
-      "noise_level_max",
+      "color",
+      "height_mm",
       "water_cooled",
+      "radiator_size_mm",
+      "fan_rpm",
       "screen_size",
       "resolution",
       "refresh_rate",
       "panel_type",
+      "response_time_ms",
+      "size_mm",
+      "quantity",
+      "pwm",
+      "led",
+      "max_video_capture_resolution",
+      "host_interface",
+      "audio",
+      "pcie_slots",
+      "m_2_slots",
+      "onboard_ethernet",
+      "channels",
+      "sample_rate_khz",
+      "protocol",
     ];
 
     const displayedSpecs = new Set();
 
-    specOrder.forEach((key) => {
-      if (
-        s.hasOwnProperty(key) &&
-        !EXCLUDE_SPECS_KEYS.has(key) &&
-        s[key] !== null &&
-        s[key] !== undefined &&
-        String(s[key]).trim() !== ""
-      ) {
-        const row = productDetailSpecsTableBody.insertRow();
-        const cellKey = row.insertCell();
-        const cellValue = row.insertCell();
-        cellKey.textContent =
-          getTranslation(
-            `spec_key_${key.toLowerCase().replace(/[^a-z0-9_]/gi, "_")}`
-          ) ||
-          key
-            .replace(/_/g, " ")
-            .replace(/([A-Z])/g, " $1")
-            .replace(/^./, (str) => str.toUpperCase());
-
-        if (typeof s[key] === "boolean") {
-          cellValue.textContent = s[key]
-            ? getTranslation("yes_filter")
-            : getTranslation("no_filter");
-        } else if (Array.isArray(s[key])) {
-          cellValue.textContent = s[key].join(", ");
-        } else {
-          cellValue.textContent = s[key];
-        }
-        displayedSpecs.add(key);
+    function addSpecRow(keyText, value, isNestedGroupTitle = false) {
+      if (value === null || value === undefined) {
+        if (typeof value === "string" && value.trim() === "") return;
+        if (typeof value !== "string" && !isNestedGroupTitle) return;
       }
-    });
 
-    for (const key in s) {
-      if (
-        s.hasOwnProperty(key) &&
-        !EXCLUDE_SPECS_KEYS.has(key) &&
-        !displayedSpecs.has(key) &&
-        s[key] !== null &&
-        s[key] !== undefined &&
-        String(s[key]).trim() !== ""
-      ) {
-        const row = productDetailSpecsTableBody.insertRow();
-        const cellKey = row.insertCell();
-        const cellValue = row.insertCell();
-        cellKey.textContent =
-          getTranslation(
-            `spec_key_${key.toLowerCase().replace(/[^a-z0-9_]/gi, "_")}`
-          ) ||
-          key
-            .replace(/_/g, " ")
-            .replace(/([A-Z])/g, " $1")
-            .replace(/^./, (str) => str.toUpperCase());
+      const row = productDetailSpecsTableBody.insertRow();
+      const cellKey = row.insertCell();
+      const cellValue = row.insertCell();
 
-        if (typeof s[key] === "boolean") {
-          cellValue.textContent = s[key]
+      cellKey.textContent = keyText;
+
+      if (isNestedGroupTitle) {
+        cellKey.colSpan = 2;
+        cellKey.style.fontWeight = "bold";
+        cellKey.style.paddingTop = "0.5em";
+        if (keyText.includes(".")) cellKey.style.paddingLeft = "1em"; // Отступ для подгрупп
+      } else {
+        if (typeof value === "boolean") {
+          cellValue.textContent = value
             ? getTranslation("yes_filter")
             : getTranslation("no_filter");
-        } else if (Array.isArray(s[key])) {
-          cellValue.textContent = s[key].join(", ");
         } else {
-          cellValue.textContent = s[key];
+          cellValue.textContent = value; // Значение уже отформатировано formatComplexValue
         }
       }
     }
+
+    function displaySpecsRecursive(obj, parentPath = "", indentLevel = 0) {
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key) && !EXCLUDE_SPECS_KEYS.has(key)) {
+          const currentValue = obj[key];
+          const currentPath = parentPath ? `${parentPath}.${key}` : key;
+          const translationKey = `spec_key_${currentPath
+            .replace(/\./g, "_")
+            .toLowerCase()}`;
+          const displayKeyText =
+            getTranslation(translationKey) ||
+            key
+              .replace(/_/g, " ")
+              .replace(/([A-Z])/g, " $1")
+              .replace(/^./, (str) => str.toUpperCase());
+
+          if (!displayedSpecs.has(currentPath)) {
+            const formattedValue = formatComplexValue(
+              currentValue,
+              currentPath
+            );
+
+            if (formattedValue === null) {
+              // Объект или массив объектов, который нужно развернуть
+              addSpecRow(displayKeyText, null, true); // Добавляем заголовок группы
+              displayedSpecs.add(currentPath);
+              displaySpecsRecursive(currentValue, currentPath, indentLevel + 1);
+            } else {
+              // Простое значение или отформатированное комплексное значение
+              const row = productDetailSpecsTableBody.insertRow();
+              const cellKey = row.insertCell();
+              const cellValue = row.insertCell();
+              cellKey.textContent = displayKeyText;
+              cellValue.textContent = formattedValue;
+              if (indentLevel > 0)
+                cellKey.style.paddingLeft = `${indentLevel}em`;
+              displayedSpecs.add(currentPath);
+            }
+          }
+        }
+      }
+    }
+
+    specOrder.forEach((path) => {
+      const value = getNestedValue(s, path);
+      const firstSegment = path.split(".")[0];
+      if (!EXCLUDE_SPECS_KEYS.has(firstSegment) && !displayedSpecs.has(path)) {
+        const formattedValue = formatComplexValue(value, path);
+        const displayKeyText =
+          getTranslation(
+            `spec_key_${path.replace(/\./g, "_").toLowerCase()}`
+          ) ||
+          path
+            .split(".")
+            .pop()
+            .replace(/_/g, " ")
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase());
+
+        if (formattedValue === null) {
+          // Объект для развертывания
+          addSpecRow(displayKeyText, null, true);
+          displayedSpecs.add(path);
+          displaySpecsRecursive(value, path, 1);
+        } else if (formattedValue !== "") {
+          addSpecRow(displayKeyText, formattedValue);
+          displayedSpecs.add(path);
+        }
+      }
+    });
+
+    displaySpecsRecursive(s); // Отображаем остальные характеристики
   }
 
-  // "Add to Build" button in modal
-  // Получаем кнопку из DOM *каждый раз*, когда функция вызывается
   let currentDetailModalAddToBuildButton = document.getElementById(
     "productDetailAddToBuildBtn"
   );
@@ -344,19 +503,23 @@ export function showProductDetails(product) {
         newBtn,
         currentDetailModalAddToBuildButton
       );
-      // Нет необходимости обновлять глобальную переменную productDetailAddToBuildBtn,
-      // так как мы всегда будем получать кнопку по ID при следующем вызове showProductDetails.
-      // Однако, если другие функции напрямую используют productDetailAddToBuildBtn, ее нужно обновить.
-      // Для безопасности, если она объявлена как let на уровне модуля:
-      // productDetailAddToBuildBtn = newBtn;
+      productDetailAddToBuildBtn = newBtn;
     } else {
-      console.error(
-        "Кнопка 'Add to Build' в модальном окне не имеет родителя. Это не должно происходить, если HTML структура корректна."
+      const actionsContainer = productDetailModalOverlay?.querySelector(
+        ".product-detail-main-actions"
       );
+      if (actionsContainer) {
+        actionsContainer.innerHTML = "";
+        actionsContainer.appendChild(newBtn);
+        productDetailAddToBuildBtn = newBtn;
+      } else {
+        console.error(
+          "Не удалось найти контейнер для кнопки 'Add to Build' в модальном окне."
+        );
+      }
     }
 
-    // Назначаем обработчик на НОВУЮ кнопку, которая теперь в DOM
-    newBtn.onclick = () => {
+    productDetailAddToBuildBtn.onclick = () => {
       window.dispatchEvent(
         new CustomEvent("add-component", {
           detail: { category: product.category, product },
@@ -379,10 +542,7 @@ export function showProductDetails(product) {
 }
 
 // --- Остальной код build.js ---
-// (toggleMainLoader, checkCompatibility, getProductDisplayTitle, getBuildImage, getBuyLink, updateTotal, renderPart,
-//  обработчик кликов partsListSection, add-component, getCurrentPartsData, loadBuildList, loadBuild,
-//  newBuildBtn, buildSelector, buildNameElement blur, buildUpdated, showGeminiResponseInModal,
-//  обработчики кнопок Gemini, закрытие модальных окон, languageChanged, init)
+// ... (Весь остальной код из предыдущей версии build.js, который не был изменен выше) ...
 
 function toggleMainLoader(show) {
   if (mainBuildLoaderOverlay) {
@@ -422,6 +582,8 @@ export function checkCompatibility(parts) {
           ? p.specs.tdp
           : typeof p.specs.specifications?.tdp === "number"
           ? p.specs.specifications.tdp
+          : typeof p.specs.tdp_w === "number"
+          ? p.specs.tdp_w
           : { Motherboard: 70, RAM: 15, CPUCooler: 5, Storage: 10 }[
               p.category
             ] || 0;
@@ -439,24 +601,28 @@ export function checkCompatibility(parts) {
 
   if (ram && motherboard) {
     const ramType = ram.specs?.ram_type || ram.specs?.type;
-    const mbRamType =
-      motherboard.specs?.memory?.ram_type || motherboard.specs?.ram_type;
+    const mbRamType = motherboard.specs?.memory?.ram_type;
     if (ramType && mbRamType && !eqIgnoreCase(ramType, mbRamType)) return false;
     if (
       typeof ram.specs?.registered === "boolean" &&
-      typeof motherboard.specs?.supports_registered_ram === "boolean"
+      typeof motherboard.specs?.memory?.supports_registered_ram === "boolean"
     ) {
-      if (ram.specs.registered && !motherboard.specs.supports_registered_ram)
+      if (
+        ram.specs.registered &&
+        !motherboard.specs.memory.supports_registered_ram
+      )
         return false;
     }
     if (
       typeof ram.specs?.ecc === "boolean" &&
-      typeof motherboard.specs?.supports_ecc_ram === "boolean"
+      typeof motherboard.specs?.memory?.supports_ecc_ram === "boolean"
     ) {
-      if (ram.specs.ecc && !motherboard.specs.supports_ecc_ram) return false;
+      if (ram.specs.ecc && !motherboard.specs.memory.supports_ecc_ram)
+        return false;
     }
     const totalRamCapacity = ram.specs?.capacity;
-    const mbMaxRam = motherboard.specs?.memory?.max_capacity_gb;
+    const mbMaxRam =
+      motherboard.specs?.memory?.max_gb || motherboard.specs?.memory?.max;
     if (totalRamCapacity && mbMaxRam && totalRamCapacity > mbMaxRam)
       return false;
     const ramModules = ram.specs?.modules?.quantity || 1;
@@ -494,7 +660,9 @@ export function checkCompatibility(parts) {
       }
       if (!caseSupportsMb) return false;
     }
-    const maxGpuLength = pcCase.specs?.max_video_card_length_mm;
+    const maxGpuLength =
+      pcCase.specs?.max_video_card_length_mm ||
+      pcCase.specs?.max_video_card_length;
     if (
       gpu?.specs?.length_mm &&
       maxGpuLength &&
@@ -504,14 +672,14 @@ export function checkCompatibility(parts) {
   }
 
   if (psu) {
-    const psuWattage = psu.specs?.wattage;
+    const psuWattage = psu.specs?.wattage || psu.specs?.wattage_w;
     if (psuWattage && calculatedTotalTdp && psuWattage < calculatedTotalTdp)
       return false;
   }
   return true;
 }
 
-function getProductDisplayTitle(specs) {
+export function getProductDisplayTitle(specs) {
   if (!specs) return getTranslation("unknown_component");
   const name =
     specs.metadata?.name ||
@@ -528,7 +696,13 @@ function getBuildImage(product) {
 }
 
 function getBuyLink(product) {
-  return product?.storeUrls?.Ekua || product?.storeIds?.Ekua;
+  const ekuaId = product?.storeIds?.Ekua;
+  if (ekuaId) {
+    return ekuaId.startsWith("http")
+      ? ekuaId
+      : `https://ek.ua/ua/search/?kof=${ekuaId}`;
+  }
+  return product?.storeUrls?.Ekua;
 }
 
 function updateTotal() {
@@ -551,6 +725,8 @@ function updateTotal() {
           ? p.specs.tdp
           : typeof p.specs.specifications?.tdp === "number"
           ? p.specs.specifications.tdp
+          : typeof p.specs.tdp_w === "number"
+          ? p.specs.tdp_w
           : { Motherboard: 70, RAM: 15, CPUCooler: 5, Storage: 10 }[
               p.category
             ] || 0;
@@ -1221,22 +1397,28 @@ async function handleEstimatePerformance() {
     let details = `${getTranslation(category)}: ${getProductDisplayTitle(
       part.specs
     )}`;
-    if (category === "CPU" && part.specs?.cores)
-      details += ` (${part.specs.cores} ${getTranslation("cores_label")}/${
-        part.specs.threads || part.specs.cores
-      } ${getTranslation("threads_label")})`;
+    if (category === "CPU" && part.specs?.cores?.total)
+      details += ` (${part.specs.cores.total} ${getTranslation(
+        "cores_label"
+      )}/${part.specs.cores.threads || part.specs.cores.total} ${getTranslation(
+        "threads_label"
+      )})`;
     if (category === "RAM" && part.specs?.capacity && part.specs?.ram_type)
       details += ` (${part.specs.capacity}GB ${part.specs.ram_type} ${
-        part.specs.speed_mhz || ""
+        part.specs.speed || part.specs.speed_mhz || ""
       }MHz)`;
-    if (category === "GPU" && part.specs?.memory_size)
-      details += ` (${part.specs.memory_size}GB VRAM)`;
+    if (category === "GPU" && part.specs?.memory)
+      details += ` (${part.specs.memory}GB VRAM)`;
     if (category === "Storage" && part.specs?.type && part.specs?.capacity)
       details += ` (${
         getTranslation(
-          "spec_key_" + part.specs.type.toLowerCase().replace(/\s+/g, "_")
+          "spec_key_" +
+            String(part.specs.type)
+              .toLowerCase()
+              .replace(/\s+/g, "_")
+              .replace(/\./g, "_")
         ) || part.specs.type
-      } ${part.specs.capacity}GB)`;
+      } ${part.specs.capacity}${part.specs.capacity_unit || "GB"})`;
     componentsDetails += `- ${details}\n`;
   });
   const promptTextMain = getTranslation(
@@ -1319,7 +1501,6 @@ window.addEventListener("languageChanged", () => {
       { partName: currentProductNameInModal }
     );
   }
-  // Обновляем текст кнопки "Add to Build" в модальном окне деталей продукта при смене языка
   const currentDetailModalAddToBuildButton = document.getElementById(
     "productDetailAddToBuildBtn"
   );

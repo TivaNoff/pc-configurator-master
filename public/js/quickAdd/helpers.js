@@ -1,171 +1,331 @@
 // public/js/quickAdd/helpers.js
+import { getTranslation } from "../localization.js";
 
-/**
- * Renders a list of checkboxes in the specified container.
- * Optimised to build the HTML string first and then set innerHTML once.
- * @param {string} containerId - The ID of the container element.
- * @param {Set<string>} valuesSet - A Set of unique string values for the checkboxes.
- * @param {function} onChangeCallback - The callback function to execute on checkbox change.
- */
-export function renderCheckboxList(containerId, valuesSet, onChangeCallback) {
+export function renderCheckboxList(containerId, values, changeCallback) {
   const container = document.getElementById(containerId);
-  if (!container) {
-    console.error(`renderCheckboxList: Container #${containerId} not found.`);
-    return;
-  }
+  if (!container) return;
+  container.innerHTML = "";
 
-  let checkboxesHTML = "";
-  // Sort values for consistent order
-  Array.from(valuesSet)
-    .sort()
-    .forEach((value) => {
-      const label = String(value);
-      // Create a safer ID by replacing spaces and special characters
-      const safeValueForId = label.replace(/[^a-zA-Z0-9_]/g, "_");
-      const id = `${containerId}-${safeValueForId}-${Date.now()}`; // Ensure unique ID
-      checkboxesHTML += `
-      <label>
-        <input type="checkbox" id="${id}" value="${label}">
-        ${label}
-      </label>
-    `;
-    });
-  container.innerHTML = checkboxesHTML; // Set HTML content once
+  // Сначала получаем переводы для всех значений (если они есть)
+  const translatedValues = Array.from(values).map((value) => {
+    const translated =
+      getTranslation(
+        `filter_value_${String(value).toLowerCase().replace(/\s+/g, "_")}`
+      ) || String(value);
+    return { original: String(value), translated: translated };
+  });
 
-  // Add event listeners after HTML is inserted
-  container.querySelectorAll("input[type=checkbox]").forEach((cb) => {
-    cb.addEventListener("input", onChangeCallback);
+  // Сортируем по переведенным значениям
+  translatedValues.sort((a, b) =>
+    a.translated.localeCompare(b.translated, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    })
+  );
+
+  translatedValues.forEach(({ original, translated }) => {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = original; // Используем оригинальное значение для value
+    checkbox.name = containerId;
+    checkbox.addEventListener("change", changeCallback);
+    label.append(checkbox, original); // Показываем переведенное значение пользователю
+    container.append(label);
   });
 }
 
-/**
- * Gets the values of checked checkboxes within a given container.
- * @param {string} containerId - The ID of the container element.
- * @returns {string[]} An array of values from checked checkboxes.
- */
 export function getCheckedValues(containerId) {
   const container = document.getElementById(containerId);
-  if (!container) {
-    console.warn(`getCheckedValues: Container #${containerId} not found.`);
-    return [];
-  }
-  return Array.from(
-    container.querySelectorAll("input[type=checkbox]:checked")
-  ).map((cb) => cb.value);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll("input:checked")).map(
+    (cb) => cb.value
+  );
 }
 
-/**
- * Gets key specifications for a product based on its category.
- * @param {object} specs - The product's specifications object.
- * @param {string} category - The product category.
- * @returns {Array<{k: string, v: any}>} An array of key-value pairs for specs.
- */
+export function debounce(func, delay) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, delay);
+  };
+}
+
 export function getKeySpecs(specs, category) {
   if (!specs) return [];
-  const map = {
-    Case: [
-      ["Form Factor", specs.form_factor || specs.formFactor],
-      ["Side Panel", specs.side_panel],
-      ["Max GPU Length", specs.max_gpu_length],
-    ],
-    CPU: [
-      ["Cores", specs.cores],
-      ["Threads", specs.threads],
-      ["Base Clock", specs.base_clock ? specs.base_clock + " GHz" : null],
-      ["Socket", specs.socket],
-    ],
-    Motherboard: [
-      ["Form Factor", specs.form_factor],
-      ["Socket", specs.socket],
-      ["Chipset", specs.chipset],
-    ],
-    GPU: [
-      ["Memory", specs.memory_size ? specs.memory_size + " GB" : null],
-      ["Length", specs.length_mm ? specs.length_mm + " mm" : null],
-    ],
-    RAM: [
-      ["Capacity", specs.capacity ? specs.capacity + " GB" : null], // Assuming capacity is in GB
-      ["Type", specs.ram_type || specs.type], // Allow for specs.type as fallback
-      [
-        "Modules",
-        specs.modules?.quantity
-          ? `${specs.modules.quantity}x${specs.modules.capacity_gb_per_module}GB`
-          : null,
-      ],
-    ],
-    Storage: [
-      ["Capacity", specs.capacity ? specs.capacity + " GB" : null], // Assuming capacity is in GB
-      ["Interface", specs.interface],
-      ["Type", specs.type],
-    ],
-    PSU: [
-      ["Wattage", specs.wattage ? specs.wattage + " W" : null],
-      ["Modular", specs.modular],
-      ["Efficiency", specs.efficiency_rating],
-    ],
-    CPUCooler: [
-      [
-        "RPM",
-        specs.rpm_min && specs.rpm_max
-          ? `${specs.rpm_min} - ${specs.rpm_max}`
-          : specs.rpm || null,
-      ],
-      [
-        "Noise Level",
-        specs.noise_level_min && specs.noise_level_max
-          ? `${specs.noise_level_min} - ${specs.noise_level_max} dBA`
-          : specs.noise_level || null,
-      ],
-      [
-        "Water Cooled",
-        typeof specs.water_cooled === "boolean"
-          ? specs.water_cooled
-            ? "Yes"
-            : "No"
-          : null,
-      ],
-    ],
-    Monitor: [
-      ["Screen Size", specs.screen_size ? `${specs.screen_size}"` : null],
-      [
-        "Resolution",
-        specs.resolution?.horizontalRes && specs.resolution?.verticalRes
-          ? `${specs.resolution.horizontalRes}x${specs.resolution.verticalRes}`
-          : null,
-      ],
-      ["Refresh Rate", specs.refresh_rate ? `${specs.refresh_rate} Hz` : null],
-      ["Panel Type", specs.panel_type],
-    ],
-    // Add other categories as needed
-  };
-  return (map[category] || [])
-    .filter(([_, v]) => v != null && v !== "") // Also filter out empty strings
-    .map(([k, v]) => ({ k, v }));
-}
+  const keySpecs = [];
+  const maxSpecsToShow = 3;
 
-/**
- * Clamps a value between a minimum and maximum.
- * @param {number} value - The value to clamp.
- * @param {number} min - The minimum value.
- * @param {number} max - The maximum value.
- * @returns {number} The clamped value.
- */
-export function clampValue(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+  // Общие характеристики, которые могут быть у многих компонентов
+  if (specs.metadata?.manufacturer)
+    keySpecs.push({
+      k: getTranslation("spec_key_manufacturer"),
+      v: specs.metadata.manufacturer,
+    });
+  else if (specs.manufacturer)
+    keySpecs.push({
+      k: getTranslation("spec_key_manufacturer"),
+      v: specs.manufacturer,
+    });
 
-/**
- * Debounce function to limit the rate at which a function can fire.
- * @param {function} func - The function to debounce.
- * @param {number} delay - The delay in milliseconds.
- * @returns {function} The debounced function.
- */
-export function debounce(func, delay) {
-  let timeoutId;
-  return function (...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      func.apply(this, args);
-    }, delay);
-  };
+  if (specs.series)
+    keySpecs.push({ k: getTranslation("spec_key_series"), v: specs.series });
+
+  switch (category) {
+    case "CPU":
+      if (specs.socket)
+        keySpecs.push({
+          k: getTranslation("spec_key_socket"),
+          v: specs.socket,
+        });
+      if (specs.cores?.total)
+        keySpecs.push({
+          k: getTranslation("spec_key_cores_total"),
+          v: `${specs.cores.total} (${
+            specs.cores.threads || specs.cores.total
+          } ${getTranslation("threads_label") || "threads"})`,
+        });
+      if (specs.clocks?.performance?.base)
+        keySpecs.push({
+          k: getTranslation("spec_key_clocks_performance_base"),
+          v: `${specs.clocks.performance.base} GHz`,
+        });
+      if (specs.specifications?.tdp_w || specs.specifications?.tdp)
+        keySpecs.push({
+          k: getTranslation("spec_key_tdp_w"),
+          v: `${specs.specifications.tdp_w || specs.specifications.tdp}W`,
+        });
+      break;
+    case "GPU":
+      if (specs.chipset)
+        keySpecs.push({
+          k: getTranslation("spec_key_chipset"),
+          v: specs.chipset,
+        });
+      if (specs.memory) {
+        // 'memory' (number) and 'memory_type' (string)
+        let memType = specs.memory_type || "";
+        keySpecs.push({
+          k: getTranslation("spec_key_memory"),
+          v: `${specs.memory}GB ${memType}`,
+        });
+      }
+      if (specs.core_boost_clock)
+        keySpecs.push({
+          k: getTranslation("spec_key_core_boost_clock"),
+          v: `${specs.core_boost_clock} MHz`,
+        });
+      if (specs.length_mm || specs.length)
+        keySpecs.push({
+          k: getTranslation("spec_key_length_mm"),
+          v: `${specs.length_mm || specs.length}mm`,
+        });
+      break;
+    case "Motherboard":
+      if (specs.socket)
+        keySpecs.push({
+          k: getTranslation("spec_key_socket"),
+          v: specs.socket,
+        });
+      if (specs.form_factor)
+        keySpecs.push({
+          k: getTranslation("spec_key_form_factor"),
+          v: specs.form_factor,
+        });
+      if (specs.chipset)
+        keySpecs.push({
+          k: getTranslation("spec_key_chipset"),
+          v: specs.chipset,
+        });
+      if (specs.memory?.ram_type)
+        keySpecs.push({
+          k: getTranslation("spec_key_memory_ram_type"),
+          v: specs.memory.ram_type,
+        });
+      break;
+    case "RAM":
+      if (specs.capacity) {
+        let capacityString = `${specs.capacity}GB`;
+        if (specs.modules?.quantity && specs.modules?.capacity_gb) {
+          capacityString += ` (${specs.modules.quantity}x${specs.modules.capacity_gb}GB)`;
+        }
+        keySpecs.push({
+          k: getTranslation("spec_key_capacity"),
+          v: capacityString,
+        });
+      }
+      if (specs.ram_type)
+        keySpecs.push({
+          k: getTranslation("spec_key_ram_type"),
+          v: specs.ram_type,
+        });
+      if (specs.speed || specs.speed_mhz)
+        keySpecs.push({
+          k: getTranslation("spec_key_speed_mhz"),
+          v: `${specs.speed || specs.speed_mhz} MHz`,
+        });
+      if (specs.cas_latency)
+        keySpecs.push({
+          k: getTranslation("spec_key_cas_latency"),
+          v: `CL${specs.cas_latency}`,
+        });
+      break;
+    case "Storage":
+      if (specs.capacity) {
+        let capacityVal = specs.capacity;
+        let unit = "GB";
+        if (capacityVal >= 1000) {
+          // Если емкость большая, показываем в TB
+          // capacityVal = (capacityVal / 1000).toFixed(1); // Оставляем как есть, т.к. в БД уже может быть TB
+          // unit = "TB"; // Смотрим на данные
+        }
+        keySpecs.push({
+          k: getTranslation("spec_key_capacity"),
+          v: `${capacityVal}${unit}`,
+        });
+      }
+      if (specs.type)
+        keySpecs.push({
+          k: getTranslation("spec_key_type"),
+          v:
+            getTranslation(
+              "spec_key_" +
+                String(specs.type).toLowerCase().replace(/\s+/g, "_")
+            ) || specs.type,
+        });
+      if (specs.form_factor)
+        keySpecs.push({
+          k: getTranslation("spec_key_form_factor"),
+          v: specs.form_factor,
+        });
+      if (specs.interface)
+        keySpecs.push({
+          k: getTranslation("spec_key_interface"),
+          v: specs.interface,
+        });
+      break;
+    case "PCCase":
+      if (specs.form_factor) {
+        // Form factor может быть массивом или строкой
+        const ff = Array.isArray(specs.form_factor)
+          ? specs.form_factor.join(", ")
+          : specs.form_factor;
+        keySpecs.push({ k: getTranslation("spec_key_form_factor"), v: ff });
+      }
+      if (specs.color?.join)
+        keySpecs.push({
+          k: getTranslation("spec_key_color"),
+          v: specs.color
+            .map((c) => getTranslation(`color_${c.toLowerCase()}`) || c)
+            .join(", "),
+        });
+      if (specs.max_video_card_length || specs.max_video_card_length_mm)
+        keySpecs.push({
+          k: getTranslation("spec_key_max_gpu_length_mm"),
+          v: `${
+            specs.max_video_card_length || specs.max_video_card_length_mm
+          }mm`,
+        });
+      break;
+    case "PSU":
+      if (specs.wattage)
+        keySpecs.push({
+          k: getTranslation("spec_key_wattage"),
+          v: `${specs.wattage}W`,
+        });
+      if (specs.efficiency_rating)
+        keySpecs.push({
+          k: getTranslation("spec_key_efficiency_rating"),
+          v: specs.efficiency_rating,
+        });
+      if (specs.modular)
+        keySpecs.push({
+          k: getTranslation("spec_key_modular"),
+          v:
+            getTranslation(`modular_${specs.modular.toLowerCase()}`) ||
+            specs.modular,
+        });
+      break;
+    case "CPUCooler":
+      if (specs.height_mm || specs.height)
+        keySpecs.push({
+          k: getTranslation("spec_key_height_mm"),
+          v: `${specs.height_mm || specs.height}mm`,
+        });
+      if (typeof specs.water_cooled === "boolean")
+        keySpecs.push({
+          k: getTranslation("spec_key_water_cooled"),
+          v: specs.water_cooled
+            ? getTranslation("yes_filter")
+            : getTranslation("no_filter"),
+        });
+      if (specs.radiator_size && specs.water_cooled)
+        keySpecs.push({
+          k: getTranslation("spec_key_radiator_size"),
+          v: `${specs.radiator_size}mm`,
+        });
+      if (specs.min_fan_rpm && specs.max_fan_rpm)
+        keySpecs.push({
+          k: getTranslation("spec_key_fan_rpm"),
+          v: `${specs.min_fan_rpm} - ${specs.max_fan_rpm} RPM`,
+        });
+      break;
+    case "Monitor":
+      if (specs.screen_size)
+        keySpecs.push({
+          k: getTranslation("spec_key_screen_size"),
+          v: `${specs.screen_size}"`,
+        });
+      if (specs.resolution?.horizontalRes && specs.resolution?.verticalRes)
+        keySpecs.push({
+          k: getTranslation("spec_key_resolution"),
+          v: `${specs.resolution.horizontalRes}x${specs.resolution.verticalRes}`,
+        });
+      if (specs.refresh_rate)
+        keySpecs.push({
+          k: getTranslation("spec_key_refresh_rate"),
+          v: `${specs.refresh_rate}Hz`,
+        });
+      if (specs.panel_type)
+        keySpecs.push({
+          k: getTranslation("spec_key_panel_type"),
+          v: specs.panel_type,
+        });
+      break;
+    case "CaseFan":
+      if (specs.size)
+        keySpecs.push({
+          k: getTranslation("spec_key_size"),
+          v: `${specs.size}mm`,
+        });
+      if (specs.quantity)
+        keySpecs.push({
+          k: getTranslation("spec_key_quantity"),
+          v: specs.quantity,
+        });
+      if (typeof specs.pwm === "boolean")
+        keySpecs.push({
+          k: getTranslation("spec_key_pwm"),
+          v: specs.pwm
+            ? getTranslation("yes_filter")
+            : getTranslation("no_filter"),
+        });
+      if (specs.led && specs.led !== "None")
+        keySpecs.push({ k: getTranslation("spec_key_led"), v: specs.led });
+      break;
+    // Добавь другие категории по аналогии
+    default:
+      // Можно добавить несколько общих полей, если они есть и не были добавлены ранее
+      if (
+        specs.type &&
+        !keySpecs.some((s) => s.k === getTranslation("spec_key_type"))
+      )
+        keySpecs.push({ k: getTranslation("spec_key_type"), v: specs.type });
+      break;
+  }
+  return keySpecs.slice(0, maxSpecsToShow);
 }

@@ -1,236 +1,287 @@
-// uiSetup.js
+// public/js/quickAdd/uiSetup.js
+import { getTranslation } from "../localization.js"; // *** ДОБАВЛЕН ИМПОРТ ***
+
+// Вспомогательная функция для создания секции фильтра
+function createFilterSection(titleKey, filterDivId) {
+  // Теперь getTranslation должна быть доступна
+  const titleText =
+    getTranslation(titleKey) ||
+    titleKey
+      .split("_")
+      .pop()
+      .replace(/^\w/, (c) => c.toUpperCase());
+  return `
+    <hr class="sidebar-divider">    
+    <h5 data-translate="${titleKey}">${titleText}</h5> 
+    <div id="${filterDivId}"></div>
+  `;
+}
 
 export function setupCpuFiltersHTML() {
   const cpuFiltersHTML = `
     <div id="cpu-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">    
-    <h5>Socket</h5>
-      <div id="socketFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Microarchitecture</h5>
-      <div id="microarchitectureFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Integrated Graphics</h5>
-      <div id="integratedGraphicsFilter"></div>
+      ${createFilterSection("filter_title_socket", "cpuSocketFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "cpuManufacturerFilter"
+      )}
+      ${createFilterSection("filter_title_core_count", "cpuCoreCountFilter")}
+      ${createFilterSection("filter_title_lithography", "cpuLithographyFilter")}
+      ${createFilterSection(
+        "filter_title_integrated_graphics",
+        "cpuIntegratedGraphicsFilter"
+      )}
     </div>
   `;
-  document
-    .querySelector(".filter-sidebar")
-    .insertAdjacentHTML("beforeend", cpuFiltersHTML);
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", cpuFiltersHTML);
 }
 
-// Добавляем HTML для фильтров GPU
 export function setupGpuFiltersHTML() {
   const gpuFiltersHTML = `
     <div id="gpu-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">    
-    <h5>Chipset</h5>
-      <div id="chipsetFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Memory Type</h5>
-      <div id="memoryTypeFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Interface</h5>
-      <div id="interfaceFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Manufacturer</h5>
-      <div id="manufacturerFilter"></div>
+      ${createFilterSection("filter_title_chipset", "gpuChipsetFilter")}
+      ${createFilterSection(
+        "filter_title_chipset_manufacturer",
+        "gpuChipsetManufacturerFilter"
+      )}
+      ${createFilterSection("filter_title_memory_size", "gpuMemorySizeFilter")}
+      ${createFilterSection("filter_title_memory_type", "gpuMemoryTypeFilter")}
+      ${createFilterSection("filter_title_interface", "gpuInterfaceFilter")}
+      ${createFilterSection("filter_title_frame_sync", "gpuFrameSyncFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "gpuManufacturerFilter"
+      )}
     </div>
   `;
-  document
-    .querySelector(".filter-sidebar")
-    .insertAdjacentHTML("beforeend", gpuFiltersHTML);
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", gpuFiltersHTML);
 }
 
-// Додаємо HTML для фільтрів Motherboard
 export function setupMbFiltersHTML() {
   const mbFiltersHTML = `
     <div id="mb-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">    
-    <h5>Socket</h5>
-      <div id="socketFilterMB"></div>
-      <hr class="sidebar-divider">  
-      <h5>Form Factor</h5>
-      <div id="formFactorFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Chipset</h5>
-      <div id="mbChipsetFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>RAM Type</h5>
-      <div id="ramTypeFilter"></div>
-      <hr class="sidebar-divider">  
-      <h5>Manufacturer</h5>
-      <div id="mbManufacturerFilter"></div>
+      ${createFilterSection("filter_title_socket", "mbSocketFilter")}
+      ${createFilterSection("filter_title_form_factor", "mbFormFactorFilter")}
+      ${createFilterSection("filter_title_chipset", "mbChipsetFilter")}
+      ${createFilterSection("filter_title_ram_type", "mbRamTypeFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "mbManufacturerFilter"
+      )}
+      ${createFilterSection("filter_title_memory_slots", "mbMemorySlotsFilter")}
     </div>
   `;
-  document
-    .querySelector(".filter-sidebar")
-    .insertAdjacentHTML("beforeend", mbFiltersHTML);
-}
-
-// Додаём HTML для фильтров PC Case
-export function setupCaseFiltersHTML() {
   const sidebar = document.querySelector(".filter-sidebar");
-  if (!sidebar)
-    return console.error("setupCaseFiltersHTML: .filter-sidebar не найден");
-  sidebar.insertAdjacentHTML(
-    "beforeend",
-    `
-    <div id="case-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">  
-    <h5>Form Factor</h5>    
-      <div id="caseFormFactorFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Side Panel</h5>     
-      <div id="sidePanelFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Manufacturer</h5>   
-      <div id="caseManufacturerFilter"></div>
-    </div>
-  `
-  );
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", mbFiltersHTML);
 }
 
-// Додаємо HTML для фільтрів CPUCooler
-export function setupCoolerFiltersHTML() {
-  const sidebar = document.querySelector(".filter-sidebar");
-  if (!sidebar)
-    return console.error("setupCoolerFiltersHTML: .filter-sidebar не знайдено");
-  sidebar.insertAdjacentHTML(
-    "beforeend",
-    `
-    
-    <div id="cooler-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">  
-    <h5>Manufacturer</h5>
-      <div id="coolerManufacturerFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Water Cooled</h5>
-      <div id="waterCooledFilter"></div>
-    </div>
-  `
-  );
-}
-
-// Добавляем HTML для фильтров RAM
 export function setupRamFiltersHTML() {
-  const sidebar = document.querySelector(".filter-sidebar");
-  if (!sidebar)
-    return console.error("setupRamFiltersHTML: .filter-sidebar не найден");
-  sidebar.insertAdjacentHTML(
-    "beforeend",
-    `
-    
+  const ramFiltersHTML = `
     <div id="ramfilters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">  
-    <h5>RAM Type</h5>       
-      <div id="ramTypeFilterRAM"></div>
-      <hr class="sidebar-divider">
-      <h5>Form Factor</h5>    
-      <div id="ramFormFactorFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>ECC</h5>            
-      <div id="eccFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Registered</h5>     
-      <div id="registeredFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Manufacturer</h5>   
-      <div id="ramManufacturerFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Heat Spreader</h5>  
-      <div id="heatSpreaderFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>RGB</h5>            
-      <div id="rgbFilter"></div>
+      ${createFilterSection("filter_title_ram_type", "ramTypeFilter")}
+      ${createFilterSection("filter_title_form_factor", "ramFormFactorFilter")}
+      ${createFilterSection("filter_title_speed_mhz", "ramSpeedFilter")}
+      ${createFilterSection(
+        "filter_title_modules_quantity",
+        "ramModulesQuantityFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_capacity_per_module",
+        "ramCapacityPerModuleFilter"
+      )}
+      ${createFilterSection("filter_title_cas_latency", "ramCasLatencyFilter")}
+      ${createFilterSection("filter_title_ecc", "ramEccFilter")}
+      ${createFilterSection("filter_title_registered", "ramRegisteredFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "ramManufacturerFilter"
+      )}
+      ${createFilterSection("filter_title_rgb", "ramRgbFilter")}
     </div>
-  `
-  );
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", ramFiltersHTML);
 }
 
-// ———————————————————————————————————————————————————
-// Добавляем HTML для фильтров Storage
 export function setupStorageFiltersHTML() {
-  const sidebar = document.querySelector(".filter-sidebar");
-  if (!sidebar)
-    return console.error("setupStorageFiltersHTML: .filter-sidebar не найден");
-  sidebar.insertAdjacentHTML(
-    "beforeend",
-    `
-    
+  const storageFiltersHTML = `
     <div id="storage-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">  
-    <h5>Type</h5>         
-      <div id="storageTypeFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Form Factor</h5>  
-      <div id="storageFormFactorFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Interface</h5>    
-      <div id="storageInterfaceFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Manufacturer</h5>
-      <div id="storageManufacturerFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>NVMe</h5>         <div id="nvmeFilter"></div>
+      ${createFilterSection("filter_title_type", "storageTypeFilter")}
+      ${createFilterSection(
+        "filter_title_form_factor",
+        "storageFormFactorFilter"
+      )}
+      ${createFilterSection("filter_title_interface", "storageInterfaceFilter")}
+      ${createFilterSection("filter_title_capacity", "storageCapacityFilter")}
+      ${createFilterSection("filter_title_nvme", "storageNvmeFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "storageManufacturerFilter"
+      )}
     </div>
-  `
-  );
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", storageFiltersHTML);
 }
 
-// Добавляем HTML для фильтров PSU
+export function setupCaseFiltersHTML() {
+  const caseFiltersHTML = `
+    <div id="case-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection("filter_title_form_factor", "caseFormFactorFilter")}
+      ${createFilterSection("filter_title_side_panel", "caseSidePanelFilter")}
+      ${createFilterSection("filter_title_color", "caseColorFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "caseManufacturerFilter"
+      )}
+    </div>
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", caseFiltersHTML);
+}
+
 export function setupPsuFiltersHTML() {
-  const sidebar = document.querySelector(".filter-sidebar");
-  if (!sidebar)
-    return console.error("setupPsuFiltersHTML: .filter-sidebar не найден");
-  sidebar.insertAdjacentHTML(
-    "beforeend",
-    `
-    
+  const psuFiltersHTML = `
     <div id="psu-filters" style="display:none" class="sidebar-filter-section">
-      <hr class="sidebar-divider">
-      <h5>Form Factor</h5>       
-      <div id="psuFormFactorFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Efficiency Rating</h5> 
-      <div id="efficiencyRatingFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Modularity</h5>        
-      <div id="modularFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Manufacturer</h5>      
-      <div id="psuManufacturerFilter"></div>
+      ${createFilterSection("filter_title_form_factor", "psuFormFactorFilter")}
+      ${createFilterSection(
+        "filter_title_efficiency_rating",
+        "psuEfficiencyRatingFilter"
+      )}
+      ${createFilterSection("filter_title_modular", "psuModularFilter")}
+      ${createFilterSection("filter_title_wattage", "psuWattageFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "psuManufacturerFilter"
+      )}
     </div>
-  `
-  );
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", psuFiltersHTML);
 }
 
-// Добавляем HTML для фильтров Monitor
-export function setupMonitorFiltersHTML() {
-  const sidebar = document.querySelector(".filter-sidebar");
-  if (!sidebar)
-    return console.error("setupMonitorFiltersHTML: .filter-sidebar не найден");
-  sidebar.insertAdjacentHTML(
-    "beforeend",
-    `
-    <div id="monitor-filters" style="display:none" class="sidebar-filter-section">
-    <hr class="sidebar-divider">
-      <h5>Brand</h5>
-      <div id="monitorBrandFilter"></div>
-      <hr class="sidebar-divider">
-      <hr class="sidebar-divider">
-      <h5>Refresh Rate</h5>
-      <div id="refreshRateFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Screen Size</h5>
-      <div id="screenSizeFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Vertical Resolution</h5>
-      <div id="verticalResFilter"></div>
-      <hr class="sidebar-divider">
-      <h5>Horizontal Resolution</h5>
-      <div id="horizontalResFilter"></div>
+export function setupCoolerFiltersHTML() {
+  const coolerFiltersHTML = `
+    <div id="cooler-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "coolerManufacturerFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_water_cooled",
+        "coolerWaterCooledFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_radiator_size",
+        "coolerRadiatorSizeFilter"
+      )}
     </div>
-  `
-  );
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", coolerFiltersHTML);
+}
+
+export function setupMonitorFiltersHTML() {
+  const monitorFiltersHTML = `
+    <div id="monitor-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection("filter_title_brand", "monitorBrandFilter")}
+      ${createFilterSection(
+        "filter_title_screen_size",
+        "monitorScreenSizeFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_resolution",
+        "monitorResolutionFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_refresh_rate",
+        "monitorRefreshRateFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_panel_type",
+        "monitorPanelTypeFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_adaptive_sync",
+        "monitorAdaptiveSyncFilter"
+      )}
+    </div>
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", monitorFiltersHTML);
+}
+
+export function setupCaseFanFiltersHTML() {
+  const caseFanFiltersHTML = `
+    <div id="casefan-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection("filter_title_size_mm", "fanSizeFilter")}
+      ${createFilterSection("filter_title_quantity", "fanQuantityFilter")}
+      ${createFilterSection("filter_title_pwm", "fanPwmFilter")}
+      ${createFilterSection("filter_title_led", "fanLedFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "fanManufacturerFilter"
+      )}
+    </div>
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", caseFanFiltersHTML);
+}
+
+export function setupCaptureCardFiltersHTML() {
+  const captureCardFiltersHTML = `
+    <div id="capturecard-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection("filter_title_interface", "captureInterfaceFilter")}
+      ${createFilterSection(
+        "filter_title_max_video_resolution",
+        "captureMaxVideoResolutionFilter"
+      )}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "captureManufacturerFilter"
+      )}
+    </div>
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", captureCardFiltersHTML);
+}
+
+export function setupSoundCardFiltersHTML() {
+  const soundCardFiltersHTML = `
+    <div id="soundcard-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection(
+        "filter_title_interface",
+        "soundcardInterfaceFilter"
+      )}
+      ${createFilterSection("filter_title_channels", "soundcardChannelsFilter")}
+      ${createFilterSection(
+        "filter_title_sample_rate",
+        "soundcardSampleRateFilter"
+      )}
+      ${createFilterSection("filter_title_snr", "soundcardSnrFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "soundcardManufacturerFilter"
+      )}
+    </div>
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", soundCardFiltersHTML);
+}
+
+export function setupNetworkCardFiltersHTML() {
+  const networkCardFiltersHTML = `
+    <div id="networkcard-filters" style="display:none" class="sidebar-filter-section">
+      ${createFilterSection("filter_title_interface", "networkInterfaceFilter")}
+      ${createFilterSection("filter_title_protocol", "networkProtocolFilter")}
+      ${createFilterSection(
+        "filter_title_manufacturer",
+        "networkManufacturerFilter"
+      )}
+    </div>
+  `;
+  const sidebar = document.querySelector(".filter-sidebar");
+  if (sidebar) sidebar.insertAdjacentHTML("beforeend", networkCardFiltersHTML);
 }

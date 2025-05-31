@@ -1,8 +1,12 @@
 // public/js/quickAdd/filters.js
 import { renderCheckboxList, getCheckedValues } from "./helpers.js";
 import { renderProductsPage, setCurrentPage } from "./productFlow.js";
-import { selectedParts, checkCompatibility } from "../build.js";
-import { getTranslation, translateDynamicElement } from "../localization.js"; // Импортируем
+import {
+  selectedParts,
+  checkCompatibility,
+  getProductDisplayTitle,
+} from "../build.js";
+import { getTranslation, translateDynamicElement } from "../localization.js";
 
 let allProducts = [];
 let filteredProducts = [];
@@ -24,67 +28,62 @@ export function getFilteredProducts() {
 
 function getNestedValue(obj, path) {
   if (!obj || typeof path !== "string") return undefined;
-  return path.split(".").reduce((acc, key) => acc?.[key], obj);
+  return path.split(".").reduce((acc, key) => {
+    if (acc && typeof acc === "object" && key in acc) {
+      return acc[key];
+    }
+    return undefined;
+  }, obj);
 }
 
-// Определение конфигураций фильтров для каждой категории
-// Это должно быть доступно для initFilters и applyFiltersAndRender
+// Конфигурации фильтров для каждой категории
 const categoryFilterConfigs = {
   cpu: {
     containerId: "cpu-filters",
     filters: {
-      socketFilter: "socket",
-      microarchitectureFilter: "microarchitecture",
-      integratedGraphicsFilter: "specifications.integratedGraphics.model",
+      cpuSocketFilter: "socket",
+      cpuManufacturerFilter: "metadata.manufacturer",
+      cpuCoreCountFilter: "cores.total",
+      cpuLithographyFilter: "specifications.lithography",
+      cpuIntegratedGraphicsFilter: "integrated_graphics",
     },
   },
   gpu: {
     containerId: "gpu-filters",
     filters: {
-      chipsetFilter: "chipset",
-      memoryTypeFilter: "memory_type",
-      interfaceFilter: "interface",
-      manufacturerFilter: "metadata.manufacturer",
+      gpuChipsetFilter: "chipset",
+      gpuChipsetManufacturerFilter: "chipset_manufacturer",
+      gpuMemorySizeFilter: "memory",
+      gpuMemoryTypeFilter: "memory_type",
+      gpuInterfaceFilter: "interface",
+      gpuFrameSyncFilter: "frame_sync",
+      gpuManufacturerFilter: "metadata.manufacturer",
     },
   },
   motherboard: {
     containerId: "mb-filters",
     filters: {
-      socketFilterMB: "socket",
-      formFactorFilter: "form_factor",
+      mbSocketFilter: "socket",
+      mbFormFactorFilter: "form_factor",
       mbChipsetFilter: "chipset",
-      ramTypeFilter: "memory.ram_type",
+      mbRamTypeFilter: "memory.ram_type",
       mbManufacturerFilter: "metadata.manufacturer",
-    },
-  },
-  pccase: {
-    // Имя категории должно совпадать с тем, что используется в data-cat и setCurrentCategory
-    containerId: "case-filters",
-    filters: {
-      caseFormFactorFilter: "form_factor",
-      sidePanelFilter: "side_panel",
-      caseManufacturerFilter: "metadata.manufacturer",
-    },
-  },
-  cpucooler: {
-    // Имя категории должно совпадать
-    containerId: "cooler-filters",
-    filters: {
-      coolerManufacturerFilter: "metadata.manufacturer",
-      waterCooledFilter: "water_cooled", // Boolean
-      // socketCompatibilityCooler: "cpu_sockets" // Array - пример, если бы был такой фильтр
+      mbMemorySlotsFilter: "memory.slots",
     },
   },
   ram: {
     containerId: "ramfilters",
     filters: {
-      ramTypeFilterRAM: "ram_type", // или 'type' в зависимости от структуры данных
+      ramTypeFilter: "ram_type",
       ramFormFactorFilter: "form_factor",
-      eccFilter: "ecc", // Boolean
-      registeredFilter: "registered", // Boolean
+      ramSpeedFilter: "speed",
+      ramModulesQuantityFilter: "modules.quantity",
+      ramCapacityPerModuleFilter: "modules.capacity_gb",
+      ramCasLatencyFilter: "cas_latency",
+      ramEccFilter: "ecc",
+      ramRegisteredFilter: "registered",
       ramManufacturerFilter: "metadata.manufacturer",
-      heatSpreaderFilter: "heat_spreader", // Boolean
-      rgbFilter: "rgb", // Boolean
+      ramRgbFilter: "rgb",
     },
   },
   storage: {
@@ -93,31 +92,112 @@ const categoryFilterConfigs = {
       storageTypeFilter: "type",
       storageFormFactorFilter: "form_factor",
       storageInterfaceFilter: "interface",
+      storageCapacityFilter: "capacity",
+      storageNvmeFilter: "nvme",
       storageManufacturerFilter: "metadata.manufacturer",
-      nvmeFilter: "nvme", // Boolean
+    },
+  },
+  pccase: {
+    containerId: "case-filters",
+    filters: {
+      caseFormFactorFilter: "form_factor",
+      caseSidePanelFilter: "side_panel",
+      caseColorFilter: "color",
+      caseManufacturerFilter: "metadata.manufacturer",
     },
   },
   psu: {
     containerId: "psu-filters",
     filters: {
       psuFormFactorFilter: "form_factor",
-      efficiencyRatingFilter: "efficiency_rating",
-      modularFilter: "modular",
+      psuEfficiencyRatingFilter: "efficiency_rating",
+      psuModularFilter: "modular",
+      psuWattageFilter: "wattage",
       psuManufacturerFilter: "metadata.manufacturer",
+    },
+  },
+  cpucooler: {
+    containerId: "cooler-filters",
+    filters: {
+      coolerManufacturerFilter: "metadata.manufacturer",
+      coolerWaterCooledFilter: "water_cooled",
+      coolerRadiatorSizeFilter: "radiator_size_mm",
     },
   },
   monitor: {
     containerId: "monitor-filters",
     filters: {
-      monitorBrandFilter: "metadata.manufacturer",
-      refreshRateFilter: "refresh_rate", // Number
-      screenSizeFilter: "screen_size", // Number (inches)
-      verticalResFilter: "resolution.verticalRes", // Number
-      horizontalResFilter: "resolution.horizontalRes", // Number
-      panelTypeFilter: "panel_type",
+      monitorBrandFilter: "metadata.manufacturer", // specs.metadata.manufacturer
+      monitorScreenSizeFilter: "screen_size",
+      monitorResolutionFilter: "resolution", // Это объект {horizontalRes, verticalRes} или строка
+      monitorRefreshRateFilter: "refresh_rate",
+      monitorPanelTypeFilter: "panel_type",
+      monitorAdaptiveSyncFilter: "adaptive_sync",
+    },
+  },
+  casefan: {
+    containerId: "casefan-filters",
+    filters: {
+      fanSizeFilter: "size_mm",
+      fanQuantityFilter: "quantity",
+      fanPwmFilter: "pwm",
+      fanLedFilter: "led",
+      fanManufacturerFilter: "metadata.manufacturer",
+    },
+  },
+  capturecard: {
+    containerId: "capturecard-filters",
+    filters: {
+      captureInterfaceFilter: "interface",
+      captureMaxVideoResolutionFilter: "max_video_capture_resolution",
+      captureManufacturerFilter: "metadata.manufacturer",
+    },
+  },
+  soundcard: {
+    containerId: "soundcard-filters",
+    filters: {
+      soundcardInterfaceFilter: "interface",
+      soundcardChannelsFilter: "channels",
+      soundcardSampleRateFilter: "sample_rate_khz",
+      soundcardSnrFilter: "signal_to_noise_ratio_db",
+      soundcardManufacturerFilter: "metadata.manufacturer",
+    },
+  },
+  networkcard: {
+    containerId: "networkcard-filters",
+    filters: {
+      networkInterfaceFilter: "interface",
+      networkProtocolFilter: "protocol",
+      networkManufacturerFilter: "metadata.manufacturer",
     },
   },
 };
+
+// Вспомогательная функция для форматирования значения фильтра для отображения и сравнения
+function formatFilterValue(value, filterKey) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "boolean") {
+    return value ? getTranslation("yes_filter") : getTranslation("no_filter");
+  }
+  if (Array.isArray(value)) {
+    return value.join(", "); // Или другое форматирование для массивов
+  }
+  // Специальная обработка для разрешения монитора
+  if (
+    filterKey === "monitorResolutionFilter" &&
+    typeof value === "object" &&
+    value.horizontalRes &&
+    value.verticalRes
+  ) {
+    return `${value.horizontalRes}x${value.verticalRes}`;
+  }
+  // Специальная обработка для других объектов, если потребуется
+  if (typeof value === "object") {
+    // Пытаемся найти осмысленное строковое представление, например, "name" или "model"
+    return value.name || value.model || JSON.stringify(value);
+  }
+  return String(value).trim();
+}
 
 export function initFilters() {
   const priceMinSlider = document.getElementById("priceMin");
@@ -141,12 +221,9 @@ export function initFilters() {
     priceMinSlider.min = defaultMinPrice;
     priceMinSlider.max = defaultMaxPrice;
     priceMinSlider.value = defaultMinPrice;
-
     priceMaxSlider.min = defaultMinPrice;
     priceMaxSlider.max = defaultMaxPrice;
     priceMaxSlider.value = defaultMaxPrice;
-
-    // Валюту можно тоже локализовать, если нужно. Пока оставляем ₴.
     priceMinValDisplay.textContent = `₴${defaultMinPrice}`;
     priceMaxValDisplay.textContent = `₴${defaultMaxPrice}`;
   }
@@ -161,60 +238,76 @@ export function initFilters() {
   const searchInput = document.getElementById("component-search");
   if (searchInput) searchInput.value = "";
 
-  const allFilterContainerIds = Object.values(categoryFilterConfigs).map(
-    (config) => config.containerId
-  );
-  allFilterContainerIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
+  Object.values(categoryFilterConfigs).forEach((config) => {
+    if (config.containerId) {
+      const el = document.getElementById(config.containerId);
+      if (el) el.style.display = "none";
+    }
   });
 
-  const config = categoryFilterConfigs[currentCategory.toLowerCase()];
+  const categoryKey = currentCategory.toLowerCase();
+  const config = categoryFilterConfigs[categoryKey];
 
   if (config && config.containerId && config.filters) {
     const filterContainer = document.getElementById(config.containerId);
     if (filterContainer) {
       filterContainer.style.display = "flex";
       const valueSetsForFilters = {};
-      Object.keys(config.filters).forEach((filterKey) => {
-        valueSetsForFilters[filterKey] = new Set();
+      Object.keys(config.filters).forEach((filterKeyInConfig) => {
+        // Переименовал filterKey во избежание путаницы
+        valueSetsForFilters[filterKeyInConfig] = new Set();
       });
 
       allProducts.forEach((product) => {
-        Object.entries(config.filters).forEach(([filterKey, specsPath]) => {
-          let value = getNestedValue(product.specs, specsPath);
-          if (value !== undefined && value !== null && value !== "") {
-            if (Array.isArray(value)) {
-              value.forEach((item) =>
-                valueSetsForFilters[filterKey].add(String(item).trim())
-              );
-            } else if (typeof value === "boolean") {
-              valueSetsForFilters[filterKey].add(
-                value
-                  ? getTranslation("yes_filter")
-                  : getTranslation("no_filter")
-              );
-            } else {
-              valueSetsForFilters[filterKey].add(String(value).trim());
+        Object.entries(config.filters).forEach(
+          ([filterKeyInConfig, specsPath]) => {
+            let rawValue = getNestedValue(product.specs, specsPath);
+            let formattedValue = formatFilterValue(rawValue, filterKeyInConfig); // Форматируем значение
+
+            if (formattedValue !== "") {
+              if (specsPath === "color" && Array.isArray(rawValue)) {
+                // Специальная обработка для массива цветов
+                rawValue.forEach((color) => {
+                  const formattedColor = formatFilterValue(
+                    color,
+                    filterKeyInConfig
+                  );
+                  if (formattedColor)
+                    valueSetsForFilters[filterKeyInConfig].add(formattedColor);
+                });
+              } else if (
+                specsPath === "form_factor" &&
+                categoryKey === "pccase" &&
+                Array.isArray(rawValue)
+              ) {
+                // Для форм-факторов корпуса
+                rawValue.forEach((ff) => {
+                  const formattedFf = formatFilterValue(ff, filterKeyInConfig);
+                  if (formattedFf)
+                    valueSetsForFilters[filterKeyInConfig].add(formattedFf);
+                });
+              } else {
+                valueSetsForFilters[filterKeyInConfig].add(formattedValue);
+              }
             }
           }
-        });
+        );
       });
-      Object.entries(config.filters).forEach(([filterKey, _]) => {
+      Object.entries(config.filters).forEach(([filterKeyInConfig, _]) => {
         renderCheckboxList(
-          filterKey,
-          valueSetsForFilters[filterKey],
+          filterKeyInConfig,
+          valueSetsForFilters[filterKeyInConfig],
           applyFiltersAndRender
         );
       });
     } else {
       console.warn(
-        `Filter container #${config.containerId} not found for category ${currentCategory}`
+        `Filter container #${config.containerId} not found for category ${currentCategory}. Ensure it exists in uiSetup.js or build.html.`
       );
     }
   } else {
     console.warn(
-      `No filter configuration found for category: ${currentCategory}`
+      `No filter configuration found for category: ${currentCategory} (key: ${categoryKey})`
     );
   }
 }
@@ -236,12 +329,12 @@ export function applyFiltersAndRender() {
     document.getElementById("compatibilityOnly")?.checked ?? false;
   const only3d = document.getElementById("only3d")?.checked ?? false;
 
-  const activeConfig = categoryFilterConfigs[currentCategory.toLowerCase()];
+  const categoryKey = currentCategory.toLowerCase();
+  const activeConfig = categoryFilterConfigs[categoryKey];
 
   prods = prods.filter((p) => {
     const price = p.prices?.Ekua ?? null;
     if (price !== null && (price < minPrice || price > maxPrice)) return false;
-    // Если цена не указана, и фильтр цен активен (не дефолтные значения), то не показываем
     if (
       price === null &&
       (minPrice > defaultMinPrice || maxPrice < defaultMaxPrice)
@@ -255,26 +348,38 @@ export function applyFiltersAndRender() {
       };
       if (!checkCompatibility(tempBuild)) return false;
     }
-    // Предполагаем, что в p.specs есть поле supports3D или аналогичное
     if (only3d && !getNestedValue(p.specs, "supports3D")) return false;
 
     if (searchQuery) {
-      const productName = (
-        getNestedValue(p.specs, "metadata.name") ||
-        getNestedValue(p.specs, "model") ||
-        getProductDisplayTitle(p.specs) ||
-        ""
-      ).toLowerCase();
-      if (!searchWords.every((word) => productName.includes(word)))
+      const searchCorpus = [
+        getNestedValue(p.specs, "metadata.name"),
+        getNestedValue(p.specs, "metadata.manufacturer"),
+        getNestedValue(p.specs, "series"),
+        getNestedValue(p.specs, "model"),
+        getProductDisplayTitle(p.specs),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (!searchWords.every((word) => searchCorpus.includes(word)))
         return false;
     }
 
     if (activeConfig && activeConfig.filters) {
-      for (const [filterKey, specsPath] of Object.entries(
+      for (const [filterKeyInConfig, specsPath] of Object.entries(
         activeConfig.filters
       )) {
-        const productValue = getNestedValue(p.specs, specsPath);
-        if (!checkCheckboxFilter(filterKey, productValue)) return false;
+        const rawProductValue = getNestedValue(p.specs, specsPath);
+        if (
+          !checkCheckboxFilter(
+            filterKeyInConfig,
+            rawProductValue,
+            specsPath === "color" ||
+              (specsPath === "form_factor" && categoryKey === "pccase")
+          )
+        )
+          return false;
       }
     }
     return true;
@@ -292,20 +397,12 @@ export function applyFiltersAndRender() {
         (a, b) => (b.prices?.Ekua ?? -Infinity) - (a.prices?.Ekua ?? -Infinity)
       );
       break;
-    // Можно добавить другие варианты сортировки, например, по названию
-    // case "nameAsc":
-    //   prods.sort((a, b) =>
-    //     (getProductDisplayTitle(a.specs) || "").localeCompare(getProductDisplayTitle(b.specs) || "")
-    //   );
-    //   break;
-    default: // Сначала с ценой, потом без, или по умолчанию как есть
+    default:
       prods.sort((a, b) => {
         const priceA = a.prices?.Ekua;
         const priceB = b.prices?.Ekua;
         if (priceA != null && priceB == null) return -1;
         if (priceA == null && priceB != null) return 1;
-        // Если цены одинаковые или обе null, можно добавить вторичную сортировку, например, по имени
-        // return (getProductDisplayTitle(a.specs) || "").localeCompare(getProductDisplayTitle(b.specs) || "");
         return 0;
       });
       break;
@@ -323,36 +420,36 @@ export function applyFiltersAndRender() {
   renderProductsPage(filteredProducts);
 }
 
-function checkCheckboxFilter(checkboxContainerId, productValue) {
+// Обновляем checkCheckboxFilter для корректной работы с отформатированными значениями
+function checkCheckboxFilter(
+  checkboxContainerId,
+  rawProductValue,
+  isArrayField = false
+) {
   const checkedValues = getCheckedValues(checkboxContainerId);
   if (checkedValues.length === 0) return true;
 
   if (
-    productValue === undefined ||
-    productValue === null ||
-    productValue === ""
+    rawProductValue === undefined ||
+    rawProductValue === null ||
+    String(rawProductValue).trim() === ""
   ) {
-    // Если у продукта нет значения для этой характеристики, он не проходит фильтр, если фильтр активен
     return false;
   }
 
-  if (Array.isArray(productValue)) {
-    // Если значение у продукта - массив (например, сокеты кулера), проверяем, есть ли пересечение с выбранными
-    return productValue.some((item) =>
-      checkedValues.includes(String(item).trim())
-    );
-  } else if (typeof productValue === "boolean") {
-    // Для булевых значений, сравниваем с переведенными "Да"/"Нет"
-    const translatedYes = getTranslation("yes_filter");
-    const translatedNo = getTranslation("no_filter");
-    const pValueStr = productValue ? translatedYes : translatedNo;
-    return checkedValues.includes(pValueStr);
+  if (isArrayField && Array.isArray(rawProductValue)) {
+    // Если поле в продукте - массив (например, case.form_factor или case.color),
+    // проверяем, совпадает ли ХОТЯ БЫ ОДНО из его значений с выбранными в фильтре
+    return rawProductValue.some((item) => {
+      const formattedItem = formatFilterValue(item, checkboxContainerId); // Форматируем каждый элемент массива
+      return checkedValues.includes(formattedItem);
+    });
   } else {
-    // Для строковых и числовых значений
-    return checkedValues.includes(String(productValue).trim());
+    // Для одиночных значений (включая объекты, которые были отформатированы в строку)
+    const formattedProductValue = formatFilterValue(
+      rawProductValue,
+      checkboxContainerId
+    );
+    return checkedValues.includes(formattedProductValue);
   }
 }
-
-// Убедитесь, что ключи 'yes_filter' и 'no_filter' добавлены в translations в localization.js
-// en: { ... yes_filter: "Yes", no_filter: "No", ... }
-// uk: { ... yes_filter: "Так", no_filter: "Ні", ... }

@@ -29,6 +29,10 @@
                         <option value="uk">УКР</option>
                         <option value="en">ENG</option>
                     </select>
+                    <select id="region-select" style="display:none;">
+                        <option value="us">US</option>
+                        <option value="eu">EU</option>
+                    </select>
                 </div>
             </div>
             <nav class="nav-primary">
@@ -121,85 +125,107 @@
                         <h3 data-translate="parts_list_title">Parts List</h3>
                     </div>
                 </div>
+
                 <div class="part-category" data-cat="PCCase">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="PCCase">PC Case</h3><button class="add-btn"
-                            data-translate-btn-add="PCCase">+ Add PC Case</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-box-open part-icon"></i>
+                            <h3 data-translate-category="PCCase">PC Case</h3>
+                        </div><button class="add-btn" data-translate-btn-add="PCCase">+ Add PC Case</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="Motherboard">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="Motherboard">Motherboard</h3><button class="add-btn"
-                            data-translate-btn-add="Motherboard">+ Add Motherboard</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-server part-icon"></i>
+                            <h3 data-translate-category="Motherboard">Motherboard</h3>
+                        </div><button class="add-btn" data-translate-btn-add="Motherboard">+ Add Motherboard</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="CPU">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="CPU">CPU</h3><button class="add-btn" data-translate-btn-add="CPU">+
-                            Add CPU</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-microchip part-icon"></i>
+                            <h3 data-translate-category="CPU">CPU</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CPU">+ Add CPU</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="CPUCooler">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="CPUCooler">CPU Cooler</h3><button class="add-btn"
-                            data-translate-btn-add="CPUCooler">+ Add CPU Cooler</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-fan part-icon"></i>
+                            <h3 data-translate-category="CPUCooler">CPU Cooler</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CPUCooler">+ Add CPU Cooler</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="GPU">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="GPU">GPU</h3><button class="add-btn" data-translate-btn-add="GPU">+
-                            Add GPU</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-image part-icon"></i>
+                            <h3 data-translate-category="GPU">GPU</h3>
+                        </div><button class="add-btn" data-translate-btn-add="GPU">+ Add GPU</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="RAM">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="RAM">RAM</h3><button class="add-btn" data-translate-btn-add="RAM">+
-                            Add RAM</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-memory part-icon"></i>
+                            <h3 data-translate-category="RAM">RAM</h3>
+                        </div><button class="add-btn" data-translate-btn-add="RAM">+ Add RAM</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="Storage">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="Storage">Storage</h3><button class="add-btn"
-                            data-translate-btn-add="Storage">+ Add Storage</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-hdd part-icon"></i>
+                            <h3 data-translate-category="Storage">Storage</h3>
+                        </div><button class="add-btn" data-translate-btn-add="Storage">+ Add Storage</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="PSU">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="PSU">Power Supply</h3><button class="add-btn"
-                            data-translate-btn-add="PSU">+ Add PSU</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-plug part-icon"></i>
+                            <h3 data-translate-category="PSU">Power Supply</h3>
+                        </div><button class="add-btn" data-translate-btn-add="PSU">+ Add PSU</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="NetworkCard">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="NetworkCard">Network Card</h3><button class="add-btn"
-                            data-translate-btn-add="NetworkCard">+ Add Network Card</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-network-wired part-icon"></i>
+                            <h3 data-translate-category="NetworkCard">Network Card</h3>
+                        </div><button class="add-btn" data-translate-btn-add="NetworkCard">+ Add Network Card</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="CaseFan">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="CaseFan">Case Fan</h3><button class="add-btn"
-                            data-translate-btn-add="CaseFan">+ Add Case Fan</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-wind part-icon"></i>
+                            <h3 data-translate-category="CaseFan">Case Fan</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CaseFan">+ Add Case Fan</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="Monitor">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="Monitor">Monitor</h3><button class="add-btn"
-                            data-translate-btn-add="Monitor">+ Add Monitor</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-desktop part-icon"></i>
+                            <h3 data-translate-category="Monitor">Monitor</h3>
+                        </div><button class="add-btn" data-translate-btn-add="Monitor">+ Add Monitor</button>
                     </div>
                 </div>
                 <div class="part-category" data-cat="SoundCard">
                     <div class="part-category-wraper">
-                        <h3 data-translate-category="SoundCard">Sound Card</h3><button class="add-btn"
-                            data-translate-btn-add="SoundCard">+ Add Sound Card</button>
+                        <div class="part-category-header"><i class="fa fa-solid fa-volume-up part-icon"></i>
+                            <h3 data-translate-category="SoundCard">Sound Card</h3>
+                        </div><button class="add-btn" data-translate-btn-add="SoundCard">+ Add Sound Card</button>
                     </div>
                 </div>
+                <div class="part-category" data-cat="CaptureCard">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-video part-icon"></i>
+                            <h3 data-translate-category="CaptureCard">Capture Card</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CaptureCard">+ Add Capture Card</button>
+                    </div>
+                </div>
+
             </section>
         </main>
     </div>
 
+    {/* Quick Add Modal */}
     <div class="overlay" id="quickAddOverlay">
         <div class="modal">
-            <div class="loader-container" id="quickAddLoader">
+            <div class="loader-container" id="quickAddLoader" style="display: none;">
                 <div class="loader"></div>
                 <p data-translate="loading_components">Завантаження компонентів...</p>
             </div>
@@ -272,7 +298,6 @@
             <div class="temp-detail-content scrollable-modal-content" style="display: none;"></div>
         </div>
     </div>
-
     <div class="overlay modal-overlay product-detail-modal-overlay" id="productDetailModalOverlay"
         style="display: none;">
         <div class="modal product-detail-modal">

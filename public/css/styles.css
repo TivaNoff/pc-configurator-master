@@ -4,11 +4,11 @@
   --bg-alt: #0a0a0a;
   --bg-rgb: 19, 19, 20;
   --fg: #eee;
-  --fg-alt: #ccc; /* Slightly lighter text for less emphasis */
+  --fg-alt: #ccc;
   --accent: #8b5cf6;
   --accent-hover: #7c4dff;
   --border: #333;
-  --border-light: #444; /* Lighter border for subtle divisions */
+  --border-light: #444;
   --success: #4caf50;
   --error-color: #f44336;
   --shadow-color: rgba(0, 0, 0, 0.3);
@@ -18,6 +18,7 @@
   --placeholder-color: #777;
   --modal-bg: var(--bg);
   --modal-alt-bg: var(--bg-alt);
+  --icon-color: var(--fg-alt); /* Цвет для иконок категорий */
 }
 
 .light-theme {
@@ -27,21 +28,20 @@
   --bg-rgb: 244, 245, 247;
   --fg: #212529;
   --fg-alt: #555;
-  --accent: #6a11cb; /* Adjusted accent for light theme */
+  --accent: #6a11cb;
   --accent-hover: #560bad;
   --border: #dee2e6;
   --border-light: #ced4da;
   --success: #28a745;
   --error-color: #dc3545;
   --shadow-color: rgba(0, 0, 0, 0.1);
-  --button-text-color: #fff; /* Keep button text white for accent bg */
+  --button-text-color: #fff;
   --input-bg: #fff;
   --input-fg: var(--fg);
   --placeholder-color: #888;
-  --modal-bg: var(
-    --bg-alt
-  ); /* Modals on light theme often use the whitest bg */
+  --modal-bg: var(--bg-alt);
   --modal-alt-bg: var(--bg);
+  --icon-color: #495057; /* Цвет для иконок категорий в светлой теме */
 }
 
 * {
@@ -271,6 +271,7 @@ a:hover {
   flex: 0 0 280px;
   background: var(--modal-alt-bg); /* Use modal-alt-bg for filter sidebar */
   padding: 1rem;
+  padding-right: 1.1rem;
   overflow-y: auto;
   border-right: 1px solid var(--border);
   transition: background-color 0.3s, border-color 0.3s;
@@ -748,6 +749,21 @@ a:hover {
   width: -webkit-fill-available;
   width: fill-available;
   align-items: center;
+}
+
+.part-category-header {
+  /* Новый контейнер для иконки и заголовка */
+  display: flex;
+  align-items: center;
+  gap: 0.6em; /* Отступ между иконкой и текстом */
+}
+
+.part-icon {
+  color: var(--icon-color); /* Используем переменную для цвета иконки */
+  font-size: 1em; /* Размер иконки относительно текста */
+  width: 20px; /* Фиксированная ширина для выравнивания */
+  text-align: center;
+  transition: color 0.3s;
 }
 .sp-buy-sec {
   display: flex;
@@ -1230,6 +1246,7 @@ a:hover {
   padding: 1.5rem;
   gap: 1.5rem; /* Gap between gallery and info */
   overflow-y: auto; /* Allow content to scroll if it overflows */
+  min-height: 230px;
 }
 
 .product-detail-gallery {
@@ -1249,6 +1266,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  padding: 10px 0;
 }
 
 .product-detail-main-image img {
@@ -1405,6 +1423,7 @@ a:hover {
   padding: 0 1.5rem 1.5rem 1.5rem; /* Padding for the specs table section */
   border-top: 1px solid var(--border-light);
   margin-top: 1rem; /* Space above specs table if merchants are present */
+  overflow: scroll;
 }
 .product-detail-specs-fullwidth h5 {
   font-size: 1.1rem;
