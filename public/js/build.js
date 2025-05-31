@@ -1,4 +1,10 @@
 // public/js/build.js
+import {
+  getTranslation,
+  translateDynamicElement,
+  currentLanguage,
+  translatePage,
+} from "./localization.js";
 
 const API = {
   list: "/api/configs",
@@ -10,13 +16,13 @@ const API = {
 
 let currentBuildId = null;
 let isSaving = false;
-export const selectedParts = {}; // Stores { category: productObject }
+export const selectedParts = {};
 
 // DOM Elements
 const mainBuildLoaderOverlay = document.getElementById(
   "mainBuildLoaderOverlay"
 );
-const buildNameElement = document.getElementById("build-name"); // Renamed for clarity
+const buildNameElement = document.getElementById("build-name");
 const buildSelector = document.getElementById("build-selector");
 const newBuildBtn = document.getElementById("new-build");
 const totalPriceSpan = document.getElementById("totalPrice");
@@ -25,31 +31,369 @@ const compicon = document.getElementById("compicon");
 const totalTdpSpan = document.getElementById("totalTdp");
 const buildDateSpan = document.getElementById("build-date");
 const buildAuthorSpan = document.getElementById("build-author");
+const partsListSection = document.querySelector(".parts-list");
 
-// Gemini Feature Elements
 const generateDescriptionBtn = document.getElementById(
   "generateDescriptionBtn"
 );
-const descriptionLoader = document.getElementById("descriptionLoader");
-const buildDescriptionOutput = document.getElementById(
-  "buildDescriptionOutput"
+const getCompatibilityAdviceBtn = document.getElementById(
+  "getCompatibilityAdviceBtn"
+);
+const estimatePerformanceBtn = document.getElementById(
+  "estimatePerformanceBtn"
+);
+const compatibilityAdvisorTriggerSection = document.getElementById(
+  "compatibilityAdvisorTriggerSection"
+);
+
+// Gemini Response Modal Elements
+const geminiResponseModalOverlay = document.getElementById(
+  "geminiResponseModalOverlay"
+);
+const geminiResponseModalTitle = document.getElementById(
+  "geminiResponseModalTitle"
+);
+const geminiResponseLoader = document.getElementById("geminiResponseLoader");
+const geminiResponseModalOutput = document.getElementById(
+  "geminiResponseModalOutput"
+);
+const closeGeminiResponseModalBtn = document.getElementById(
+  "closeGeminiResponseModal"
+);
+
+// Product Detail Modal Elements
+const productDetailModalOverlay = document.getElementById(
+  "productDetailModalOverlay"
+);
+const productDetailModalTitleElement = document.getElementById(
+  "productDetailModalTitle"
+);
+const closeProductDetailModalBtn = document.getElementById(
+  "closeProductDetailModal"
+);
+const productDetailMainImage = document.getElementById(
+  "productDetailMainImage"
+);
+const productDetailThumbnailsContainer = document.getElementById(
+  "productDetailThumbnails"
+);
+const productDetailName = document.getElementById("productDetailName");
+const productDetailCategoryElement = document.getElementById(
+  "productDetailCategoryValue"
+); // Changed ID to be more specific
+const productDetail3DIcon = document.getElementById("productDetail3DIcon");
+const productDetailMerchantsContainer = document.getElementById(
+  "productDetailMerchants"
+);
+const productDetailSpecsTableBody = document.querySelector(
+  "#productDetailSpecs table tbody"
 );
 
 /**
- * Shows or hides the main build loader.
- * @param {boolean} show - True to show, false to hide.
+ * Shows dedicated product details in a modal overlay.
+ * @param {object} product - The product object.
  */
+export function showProductDetails(product) {
+  if (!product || !productDetailModalOverlay) {
+    console.warn("showProductDetails: product or modal elements are undefined");
+    return;
+  }
+  const s = product.specs || {};
+  const productName = getProductDisplayTitle(s);
+  const mainImgUrl = getBuildImage(product);
+
+  if (productDetailModalTitleElement)
+    productDetailModalTitleElement.textContent =
+      getTranslation("part_details_title_modal", undefined, {
+        partName: productName,
+      }) || productName;
+  if (productDetailName) productDetailName.textContent = productName;
+
+  if (productDetailCategoryElement) {
+    const categoryText =
+      getTranslation(product.category) ||
+      product.category ||
+      getTranslation("category_na") ||
+      "N/A";
+    productDetailCategoryElement.textContent = categoryText; // Directly set text content
+  }
+  if (productDetail3DIcon) {
+    productDetail3DIcon.style.display = s.supports3D ? "inline" : "none";
+  }
+
+  if (productDetailMainImage) {
+    productDetailMainImage.src = mainImgUrl;
+    productDetailMainImage.alt = productName;
+  }
+
+  if (productDetailThumbnailsContainer) {
+    productDetailThumbnailsContainer.innerHTML = "";
+    const imageUrls =
+      product.images &&
+      Array.isArray(product.images) &&
+      product.images.length > 0
+        ? product.images
+        : [mainImgUrl];
+
+    imageUrls.forEach((url, index) => {
+      const thumb = document.createElement("img");
+      thumb.src = url;
+      thumb.alt = `${
+        getTranslation("thumbnail_alt_prefix") || "Thumbnail for"
+      } ${productName} ${index + 1}`;
+      if (index === 0) thumb.classList.add("active");
+      thumb.addEventListener("click", () => {
+        if (productDetailMainImage) productDetailMainImage.src = url;
+        productDetailThumbnailsContainer
+          .querySelectorAll("img")
+          .forEach((img) => img.classList.remove("active"));
+        thumb.classList.add("active");
+      });
+      productDetailThumbnailsContainer.appendChild(thumb);
+    });
+  }
+
+  if (productDetailMerchantsContainer) {
+    productDetailMerchantsContainer.innerHTML = "";
+    let merchantsRendered = false;
+    if (product.prices && Object.keys(product.prices).length > 0) {
+      const priceEkua = product.prices?.Ekua;
+      const urlEkua =
+        product.storeUrls?.Ekua ||
+        (product.storeIds?.Ekua
+          ? `https://ek.ua/search/?kof=${product.storeIds.Ekua}`
+          : null);
+
+      if (typeof priceEkua === "number") {
+        const merchantRow = document.createElement("div");
+        merchantRow.className = "merchant-row";
+        merchantRow.innerHTML = `
+                <span class="merchant-name">Ek.ua</span>
+                <span class="merchant-availability">${
+                  getTranslation("availability_in_stock") || "In Stock"
+                }</span>
+                <span class="merchant-price">₴${priceEkua
+                  .toFixed(2)
+                  .replace(".", ",")}</span>
+                ${
+                  urlEkua
+                    ? `<a href="${urlEkua}" target="_blank" rel="noopener noreferrer" class="merchant-buy-btn">${getTranslation(
+                        "buy_button_text"
+                      )}</a>`
+                    : ""
+                }
+            `;
+        productDetailMerchantsContainer.appendChild(merchantRow);
+        merchantsRendered = true;
+      }
+    }
+
+    if (!merchantsRendered) {
+      productDetailMerchantsContainer.innerHTML = `<p>${
+        getTranslation("no_price_data_available") ||
+        "No pricing data available."
+      }</p>`;
+    }
+  }
+
+  if (productDetailSpecsTableBody) {
+    productDetailSpecsTableBody.innerHTML = "";
+    const EXCLUDE_SPECS_KEYS = new Set([
+      "opendb_id",
+      "_id",
+      "category",
+      "__v",
+      "updatedAt",
+      "createdAt",
+      "storeImg",
+      "storeIds",
+      "storeUrls",
+      "prices",
+      "metadata",
+      "compatible",
+      "supports3D",
+      "manufacturer",
+      "series",
+      "model",
+      "general_product_information",
+      "images",
+    ]);
+
+    const specOrder = [
+      "form_factor",
+      "socket",
+      "chipset",
+      "memory_type",
+      "ram_type",
+      "capacity",
+      "cores",
+      "threads",
+      "base_clock",
+      "boost_clock",
+      "memory_size",
+      "interface",
+      "length_mm",
+      "max_gpu_length_mm",
+      "max_cpu_cooler_height_mm",
+      "wattage",
+      "efficiency_rating",
+      "modular",
+      "type",
+      "speed_mhz",
+      "side_panel",
+      "power_supply",
+      "rpm_min",
+      "rpm_max",
+      "noise_level_min",
+      "noise_level_max",
+      "water_cooled",
+      "screen_size",
+      "resolution",
+      "refresh_rate",
+      "panel_type",
+    ];
+
+    const displayedSpecs = new Set();
+
+    specOrder.forEach((key) => {
+      if (
+        s.hasOwnProperty(key) &&
+        !EXCLUDE_SPECS_KEYS.has(key) &&
+        s[key] !== null &&
+        s[key] !== undefined &&
+        String(s[key]).trim() !== ""
+      ) {
+        const row = productDetailSpecsTableBody.insertRow();
+        const cellKey = row.insertCell();
+        const cellValue = row.insertCell();
+        cellKey.textContent =
+          getTranslation(
+            `spec_key_${key.toLowerCase().replace(/[^a-z0-9_]/gi, "_")}`
+          ) ||
+          key
+            .replace(/_/g, " ")
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase());
+
+        if (typeof s[key] === "boolean") {
+          cellValue.textContent = s[key]
+            ? getTranslation("yes_filter")
+            : getTranslation("no_filter");
+        } else if (Array.isArray(s[key])) {
+          cellValue.textContent = s[key].join(", ");
+        } else {
+          cellValue.textContent = s[key];
+        }
+        displayedSpecs.add(key);
+      }
+    });
+
+    for (const key in s) {
+      if (
+        s.hasOwnProperty(key) &&
+        !EXCLUDE_SPECS_KEYS.has(key) &&
+        !displayedSpecs.has(key) &&
+        s[key] !== null &&
+        s[key] !== undefined &&
+        String(s[key]).trim() !== ""
+      ) {
+        const row = productDetailSpecsTableBody.insertRow();
+        const cellKey = row.insertCell();
+        const cellValue = row.insertCell();
+        cellKey.textContent =
+          getTranslation(
+            `spec_key_${key.toLowerCase().replace(/[^a-z0-9_]/gi, "_")}`
+          ) ||
+          key
+            .replace(/_/g, " ")
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase());
+
+        if (typeof s[key] === "boolean") {
+          cellValue.textContent = s[key]
+            ? getTranslation("yes_filter")
+            : getTranslation("no_filter");
+        } else if (Array.isArray(s[key])) {
+          cellValue.textContent = s[key].join(", ");
+        } else {
+          cellValue.textContent = s[key];
+        }
+      }
+    }
+  }
+
+  // "Add to Build" button in modal
+  // Получаем кнопку из DOM *каждый раз*, когда функция вызывается
+  let currentDetailModalAddToBuildButton = document.getElementById(
+    "productDetailAddToBuildBtn"
+  );
+
+  if (currentDetailModalAddToBuildButton) {
+    const newBtn = currentDetailModalAddToBuildButton.cloneNode(true);
+    const btnTextSpan = newBtn.querySelector("span");
+    if (btnTextSpan) {
+      btnTextSpan.textContent = getTranslation("add_to_build_btn_modal");
+    } else {
+      newBtn.innerHTML = `<i class="fas fa-plus-circle"></i> ${getTranslation(
+        "add_to_build_btn_modal"
+      )}`;
+    }
+
+    if (currentDetailModalAddToBuildButton.parentNode) {
+      currentDetailModalAddToBuildButton.parentNode.replaceChild(
+        newBtn,
+        currentDetailModalAddToBuildButton
+      );
+      // Нет необходимости обновлять глобальную переменную productDetailAddToBuildBtn,
+      // так как мы всегда будем получать кнопку по ID при следующем вызове showProductDetails.
+      // Однако, если другие функции напрямую используют productDetailAddToBuildBtn, ее нужно обновить.
+      // Для безопасности, если она объявлена как let на уровне модуля:
+      // productDetailAddToBuildBtn = newBtn;
+    } else {
+      console.error(
+        "Кнопка 'Add to Build' в модальном окне не имеет родителя. Это не должно происходить, если HTML структура корректна."
+      );
+    }
+
+    // Назначаем обработчик на НОВУЮ кнопку, которая теперь в DOM
+    newBtn.onclick = () => {
+      window.dispatchEvent(
+        new CustomEvent("add-component", {
+          detail: { category: product.category, product },
+        })
+      );
+      window.dispatchEvent(new Event("buildUpdated"));
+      if (productDetailModalOverlay)
+        productDetailModalOverlay.style.display = "none";
+      document.body.style.overflow = "";
+    };
+  } else {
+    console.error(
+      "Кнопка 'productDetailAddToBuildBtn' не найдена в DOM при вызове showProductDetails."
+    );
+  }
+
+  if (productDetailModalOverlay)
+    productDetailModalOverlay.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+// --- Остальной код build.js ---
+// (toggleMainLoader, checkCompatibility, getProductDisplayTitle, getBuildImage, getBuyLink, updateTotal, renderPart,
+//  обработчик кликов partsListSection, add-component, getCurrentPartsData, loadBuildList, loadBuild,
+//  newBuildBtn, buildSelector, buildNameElement blur, buildUpdated, showGeminiResponseInModal,
+//  обработчики кнопок Gemini, закрытие модальных окон, languageChanged, init)
+
 function toggleMainLoader(show) {
   if (mainBuildLoaderOverlay) {
     mainBuildLoaderOverlay.style.display = show ? "flex" : "none";
+    const loaderText = mainBuildLoaderOverlay.querySelector("p");
+    if (loaderText) {
+      translateDynamicElement(loaderText, "loading_build_data");
+    }
   }
 }
 
-/**
- * Checks compatibility between selected PC parts.
- * @param {object} parts - An object журналирования selected parts, e.g., { CPU: cpuProduct, Motherboard: mbProduct }.
- * @returns {boolean} True if compatible, false otherwise.
- */
 export function checkCompatibility(parts) {
   const cpu = parts["CPU"];
   const motherboard = parts["Motherboard"];
@@ -70,7 +414,7 @@ export function checkCompatibility(parts) {
     );
   }
 
-  let currentTotalTdp = 0;
+  let calculatedTotalTdp = 0;
   Object.values(parts).forEach((p) => {
     if (p && p.specs) {
       let tdpVal =
@@ -81,10 +425,10 @@ export function checkCompatibility(parts) {
           : { Motherboard: 70, RAM: 15, CPUCooler: 5, Storage: 10 }[
               p.category
             ] || 0;
-      currentTotalTdp += tdpVal;
+      calculatedTotalTdp += tdpVal;
     }
   });
-  currentTotalTdp += 50;
+  calculatedTotalTdp += 50;
 
   if (cpu && motherboard) {
     const cpuSocket = cpu.specs?.socket;
@@ -98,7 +442,6 @@ export function checkCompatibility(parts) {
     const mbRamType =
       motherboard.specs?.memory?.ram_type || motherboard.specs?.ram_type;
     if (ramType && mbRamType && !eqIgnoreCase(ramType, mbRamType)) return false;
-
     if (
       typeof ram.specs?.registered === "boolean" &&
       typeof motherboard.specs?.supports_registered_ram === "boolean"
@@ -112,12 +455,10 @@ export function checkCompatibility(parts) {
     ) {
       if (ram.specs.ecc && !motherboard.specs.supports_ecc_ram) return false;
     }
-
     const totalRamCapacity = ram.specs?.capacity;
     const mbMaxRam = motherboard.specs?.memory?.max_capacity_gb;
     if (totalRamCapacity && mbMaxRam && totalRamCapacity > mbMaxRam)
       return false;
-
     const ramModules = ram.specs?.modules?.quantity || 1;
     const mbRamSlots = motherboard.specs?.memory?.slots;
     if (mbRamSlots && ramModules > mbRamSlots) return false;
@@ -132,7 +473,6 @@ export function checkCompatibility(parts) {
       !coolerSockets.some((s) => eqIgnoreCase(s, cpuSocket))
     )
       return false;
-
     if (pcCase?.specs?.max_cpu_cooler_height_mm && cpuCooler.specs?.height_mm) {
       if (cpuCooler.specs.height_mm > pcCase.specs.max_cpu_cooler_height_mm)
         return false;
@@ -142,7 +482,6 @@ export function checkCompatibility(parts) {
   if (pcCase && motherboard) {
     const caseFormFactorRaw = pcCase.specs?.form_factor || "";
     const mbFormFactor = motherboard.specs?.form_factor;
-
     if (mbFormFactor) {
       let caseSupportsMb = false;
       if (Array.isArray(caseFormFactorRaw)) {
@@ -155,7 +494,6 @@ export function checkCompatibility(parts) {
       }
       if (!caseSupportsMb) return false;
     }
-
     const maxGpuLength = pcCase.specs?.max_video_card_length_mm;
     if (
       gpu?.specs?.length_mm &&
@@ -167,38 +505,32 @@ export function checkCompatibility(parts) {
 
   if (psu) {
     const psuWattage = psu.specs?.wattage;
-    if (psuWattage && currentTotalTdp && psuWattage < currentTotalTdp)
+    if (psuWattage && calculatedTotalTdp && psuWattage < calculatedTotalTdp)
       return false;
   }
   return true;
 }
 
-/**
- * Generates a display title for a product.
- * @param {object} specs - The product's specifications object.
- * @returns {string} The display title.
- */
 function getProductDisplayTitle(specs) {
-  if (!specs) return "Невідомий компонент";
-  return (
-    specs.metadata?.name || // Prefer metadata name
+  if (!specs) return getTranslation("unknown_component");
+  const name =
+    specs.metadata?.name ||
     [specs.manufacturer, specs.series, specs.model].filter(Boolean).join(" ") ||
     specs.opendb_id ||
-    "Компонент без назви"
-  );
+    getTranslation("unnamed_component");
+  return name;
 }
 
 function getBuildImage(product) {
-  return product?.storeImg?.Ekua || "/img/placeholder.png";
+  return (
+    product?.storeImg?.Ekua || product?.images?.[0] || "/img/placeholder.png"
+  );
 }
 
 function getBuyLink(product) {
   return product?.storeUrls?.Ekua || product?.storeIds?.Ekua;
 }
 
-/**
- * Updates total price, TDP, and compatibility status in the UI.
- */
 function updateTotal() {
   const sumPrice = Object.values(selectedParts).reduce((sum, p) => {
     if (!p || !p.prices) return sum;
@@ -208,9 +540,10 @@ function updateTotal() {
     return sum + (typeof price === "number" ? price : 0);
   }, 0);
 
-  totalPriceSpan.textContent = sumPrice.toFixed(2).replace(".", ",");
+  if (totalPriceSpan)
+    totalPriceSpan.textContent = sumPrice.toFixed(2).replace(".", ",");
 
-  let sumTdp = 0;
+  let calculatedTotalTdp = 0;
   Object.values(selectedParts).forEach((p) => {
     if (p && p.specs) {
       let tdpVal =
@@ -221,24 +554,34 @@ function updateTotal() {
           : { Motherboard: 70, RAM: 15, CPUCooler: 5, Storage: 10 }[
               p.category
             ] || 0;
-      sumTdp += tdpVal;
+      calculatedTotalTdp += tdpVal;
     }
   });
-  sumTdp += 50;
-  totalTdpSpan.textContent = sumTdp;
+  calculatedTotalTdp += 50;
+  if (totalTdpSpan) totalTdpSpan.textContent = calculatedTotalTdp;
 
   const compatible = checkCompatibility(selectedParts);
   if (compatibilitySpan && compicon) {
     if (compatible) {
-      compatibilitySpan.textContent = "Сумісно";
+      translateDynamicElement(
+        compatibilitySpan,
+        "compatibility_status_compatible"
+      );
       compatibilitySpan.style.color = "var(--success)";
       compicon.className = "fa fa-check-circle";
       compicon.style.color = "var(--success)";
+      if (compatibilityAdvisorTriggerSection)
+        compatibilityAdvisorTriggerSection.style.display = "none";
     } else {
-      compatibilitySpan.textContent = "Несумісно";
+      translateDynamicElement(
+        compatibilitySpan,
+        "compatibility_status_incompatible"
+      );
       compatibilitySpan.style.color = "var(--error-color)";
       compicon.className = "fa fa-times-circle";
       compicon.style.color = "var(--error-color)";
+      if (compatibilityAdvisorTriggerSection)
+        compatibilityAdvisorTriggerSection.style.display = "block";
     }
   }
 
@@ -254,15 +597,10 @@ function updateTotal() {
       .replace(".", ",")}`;
 }
 
-/**
- * Renders a selected part in its category section.
- * @param {string} category - The category of the part.
- * @param {object} product - The product object.
- */
 function renderPart(category, product) {
   if (!product || !product.specs) {
     console.warn(
-      `Продукт або його характеристики для категорії "${category}" не визначені.`
+      `Продукт или его характеристики для категории "${category}" не определены.`
     );
     delete selectedParts[category];
     const container = document.querySelector(
@@ -272,9 +610,15 @@ function renderPart(category, product) {
       container.querySelectorAll(".selected-part").forEach((el) => el.remove());
       const addBtn = container.querySelector(".add-btn");
       if (addBtn) {
-        addBtn.textContent = `+ Add ${
-          container.querySelector("h3")?.textContent || category
-        }`;
+        const categoryTitleElement = container.querySelector("h3");
+        const categoryTitle = categoryTitleElement
+          ? getTranslation(
+              categoryTitleElement.dataset.translateCategory || category
+            )
+          : getTranslation(category);
+        addBtn.textContent = `${getTranslation(
+          "add_btn_prefix"
+        )}${categoryTitle}`;
         addBtn.classList.remove("swap-btn");
       }
     }
@@ -291,7 +635,7 @@ function renderPart(category, product) {
 
   const addBtn = container.querySelector(".add-btn");
   if (addBtn) {
-    addBtn.textContent = "Замінити";
+    addBtn.textContent = getTranslation("swap_btn_text");
     addBtn.classList.add("swap-btn");
   }
 
@@ -302,6 +646,7 @@ function renderPart(category, product) {
 
   const partDiv = document.createElement("div");
   partDiv.className = "selected-part";
+  partDiv.dataset.productId = product.opendb_id;
   partDiv.innerHTML = `
     <img src="${imgUrl}" alt="${title}" class="sp-thumb" onerror="this.src='/img/placeholder.png'" />
     <div class="sp-info">
@@ -313,10 +658,14 @@ function renderPart(category, product) {
         <div class="sp-actions">
           ${
             buyLink
-              ? `<a href="${buyLink}" target="_blank" rel="noopener noreferrer" class="sp-buy">Купити</a>`
-              : '<span class="sp-buy-na" style="font-size: 0.8em; color: #999;">N/A</span>'
+              ? `<a href="${buyLink}" target="_blank" rel="noopener noreferrer" class="sp-buy">${
+                  getTranslation("buy_button_text") || "Купити"
+                }</a>`
+              : `<span class="sp-buy-na" style="font-size: 0.8em; color: #999;">N/A</span>`
           }
-          <button class="sp-remove" title="Видалити">&times;</button>
+          <button class="sp-remove" title="${
+            getTranslation("remove_button_title") || "Видалити"
+          }">&times;</button>
         </div>
       </div>
     </div>
@@ -325,26 +674,55 @@ function renderPart(category, product) {
   updateTotal();
 }
 
-// Event Listeners for parts management
-document.body.addEventListener("click", (e) => {
-  if (e.target.matches(".sp-remove")) {
-    const catElement = e.target.closest(".part-category");
-    if (!catElement) return;
-    const cat = catElement.dataset.cat;
-    delete selectedParts[cat];
-    e.target.closest(".selected-part")?.remove();
+if (partsListSection) {
+  partsListSection.addEventListener("click", (e) => {
+    const selectedPartElement = e.target.closest(".selected-part");
+    const isRemoveButton = e.target.closest(".sp-remove");
+    const isBuyButton = e.target.closest(".sp-buy");
+    const isAddButton = e.target.closest(".add-btn");
 
-    const addBtn = catElement.querySelector(".add-btn");
-    if (addBtn) {
-      const categoryTitle =
-        catElement.querySelector("h3")?.textContent?.trim() || cat;
-      addBtn.textContent = `+ Add ${categoryTitle}`;
-      addBtn.classList.remove("swap-btn");
+    if (
+      selectedPartElement &&
+      !isRemoveButton &&
+      !isBuyButton &&
+      !isAddButton
+    ) {
+      const categoryElement = selectedPartElement.closest(".part-category");
+      if (categoryElement) {
+        const category = categoryElement.dataset.cat;
+        const product = selectedParts[category];
+        if (product) {
+          showProductDetails(product);
+        } else {
+          console.warn(
+            "Product data not found for selected part in category:",
+            category
+          );
+        }
+      }
+    } else if (isRemoveButton) {
+      const catElement = isRemoveButton.closest(".part-category");
+      if (!catElement) return;
+      const cat = catElement.dataset.cat;
+      delete selectedParts[cat];
+      isRemoveButton.closest(".selected-part")?.remove();
+      const addBtn = catElement.querySelector(".add-btn");
+      if (addBtn) {
+        const categoryTitleElement = catElement.querySelector("h3");
+        const categoryKey = categoryTitleElement
+          ? categoryTitleElement.dataset.translateCategory || cat
+          : cat;
+        const categoryName = getTranslation(categoryKey);
+        addBtn.textContent = `${getTranslation(
+          "add_btn_prefix"
+        )}${categoryName}`;
+        addBtn.classList.remove("swap-btn");
+      }
+      updateTotal();
+      window.dispatchEvent(new Event("buildUpdated"));
     }
-    updateTotal();
-    window.dispatchEvent(new Event("buildUpdated")); // Notify that build has changed
-  }
-});
+  });
+}
 
 window.addEventListener("add-component", ({ detail }) => {
   if (detail && detail.category && detail.product) {
@@ -359,68 +737,80 @@ function getCurrentPartsData() {
     .filter((id) => id);
 }
 
-/**
- * Loads the list of saved builds for the current user.
- */
 async function loadBuildList() {
   toggleMainLoader(true);
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      buildSelector.innerHTML = '<option value="">Спочатку увійдіть</option>';
+      if (buildSelector)
+        buildSelector.innerHTML = `<option value="">${
+          getTranslation("please_login_to_see_builds") || "Спочатку увійдіть"
+        }</option>`;
       return;
     }
     const res = await fetch(API.list, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok)
-      throw new Error(`Не вдалося завантажити список збірок: ${res.status}`);
+      throw new Error(
+        `${
+          getTranslation("error_loading_build_list_status") ||
+          "Не вдалося завантажити список збірок"
+        }: ${res.status}`
+      );
     const list = await res.json();
-    buildSelector.innerHTML = list
-      .map((b) => `<option value="${b._id}">${b.name}</option>`)
-      .join("");
-    if (list.length === 0) {
-      buildSelector.innerHTML = '<option value="">Збірок не знайдено</option>';
+    if (buildSelector) {
+      buildSelector.innerHTML = list
+        .map((b) => `<option value="${b._id}">${b.name}</option>`)
+        .join("");
+      if (list.length === 0) {
+        buildSelector.innerHTML = `<option value="">${
+          getTranslation("no_builds_found") || "Збірок не знайдено"
+        }</option>`;
+      }
     }
   } catch (error) {
     console.error("Помилка завантаження списку збірок:", error);
-    buildSelector.innerHTML = '<option value="">Помилка завантаження</option>';
+    if (buildSelector)
+      buildSelector.innerHTML = `<option value="">${
+        getTranslation("error_loading_build_list") || "Помилка завантаження"
+      }</option>`;
   } finally {
     toggleMainLoader(false);
   }
 }
 
-/**
- * Loads a specific build by its ID.
- * @param {string} id - The ID of the build to load.
- */
 async function loadBuild(id) {
   if (!id) {
     Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
     document.querySelectorAll(".selected-part").forEach((el) => el.remove());
     document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
       const catElement = btn.closest(".part-category");
-      const categoryTitle =
-        catElement?.querySelector("h3")?.textContent?.trim() ||
+      const categoryKey =
+        catElement?.querySelector("h3")?.dataset.translateCategory ||
         catElement?.dataset.cat ||
         "Part";
-      btn.textContent = `+ Add ${categoryTitle}`;
+      const categoryName = getTranslation(categoryKey);
+      btn.textContent = `${getTranslation("add_btn_prefix")}${categoryName}`;
       btn.classList.remove("swap-btn");
     });
-    if (buildNameElement) buildNameElement.textContent = "Нова збірка";
+    if (buildNameElement)
+      buildNameElement.textContent =
+        getTranslation("new_build_default_name") || "Нова збірка";
     if (buildDateSpan)
-      buildDateSpan.textContent = new Date().toLocaleDateString("uk-UA", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    if (buildAuthorSpan) buildAuthorSpan.textContent = "Ви";
+      buildDateSpan.textContent = new Date().toLocaleDateString(
+        currentLanguage === "uk" ? "uk-UA" : "en-US",
+        { month: "short", day: "numeric", year: "numeric" }
+      );
+    if (buildAuthorSpan)
+      buildAuthorSpan.textContent =
+        getTranslation("you_author_placeholder") || "Ви";
     updateTotal();
-    if (buildDescriptionOutput) buildDescriptionOutput.value = ""; // Clear description for new/empty build
+    if (geminiResponseModalOutput) geminiResponseModalOutput.value = "";
     return;
   }
   toggleMainLoader(true);
-  if (buildDescriptionOutput) buildDescriptionOutput.value = ""; // Clear previous description
+  if (geminiResponseModalOutput) geminiResponseModalOutput.value = "";
 
   try {
     const token = localStorage.getItem("token");
@@ -429,7 +819,12 @@ async function loadBuild(id) {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok)
-      throw new Error(`Не вдалося завантажити збірку: ${res.status}`);
+      throw new Error(
+        `${
+          getTranslation("error_loading_build_status") ||
+          "Не вдалося завантажити збірку"
+        }: ${res.status}`
+      );
     const cfg = await res.json();
 
     currentBuildId = cfg._id;
@@ -437,23 +832,25 @@ async function loadBuild(id) {
     if (buildDateSpan)
       buildDateSpan.textContent = new Date(
         cfg.createdAt || Date.now()
-      ).toLocaleDateString("uk-UA", {
+      ).toLocaleDateString(currentLanguage === "uk" ? "uk-UA" : "en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
     if (buildAuthorSpan)
-      buildAuthorSpan.textContent = cfg.authorName || "Анонім";
+      buildAuthorSpan.textContent =
+        cfg.authorName || getTranslation("anonymous_author");
 
     Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
     document.querySelectorAll(".selected-part").forEach((el) => el.remove());
     document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
       const catElement = btn.closest(".part-category");
-      const categoryTitle =
-        catElement?.querySelector("h3")?.textContent?.trim() ||
+      const categoryKey =
+        catElement?.querySelector("h3")?.dataset.translateCategory ||
         catElement?.dataset.cat ||
         "Part";
-      btn.textContent = `+ Add ${categoryTitle}`;
+      const categoryName = getTranslation(categoryKey);
+      btn.textContent = `${getTranslation("add_btn_prefix")}${categoryName}`;
       btn.classList.remove("swap-btn");
     });
 
@@ -464,22 +861,21 @@ async function loadBuild(id) {
         }).then((r) => {
           if (!r.ok) {
             console.error(
-              `Не вдалося завантажити компонент ${cid}: ${r.status}`
+              `${
+                getTranslation("error_loading_component_status") ||
+                "Не вдалося завантажити компонент"
+              } ${cid}: ${r.status}`
             );
             return null;
           }
           return r.json();
         })
       );
-      const products = (await Promise.all(productsPromises)).filter((p) => p); // Filter out nulls from failed fetches
+      const products = (await Promise.all(productsPromises)).filter((p) => p);
       products.forEach((p) => {
         if (p && p.category) renderPart(p.category, p);
         else console.warn("Отримано недійсний або неповний компонент:", p);
       });
-    }
-    if (cfg.description && buildDescriptionOutput) {
-      // Load saved description
-      buildDescriptionOutput.value = cfg.description;
     }
     updateTotal();
   } catch (error) {
@@ -489,73 +885,75 @@ async function loadBuild(id) {
   }
 }
 
-// Event listener for "New Build" button
-newBuildBtn.addEventListener("click", async () => {
-  toggleMainLoader(true);
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Будь ласка, увійдіть, щоб створити нову збірку.");
-      return;
-    }
-    const defaultBuildName =
-      "Нова збірка " +
-      new Date().toLocaleTimeString("uk-UA", {
-        hour: "2-digit",
-        minute: "2-digit",
+if (newBuildBtn) {
+  newBuildBtn.addEventListener("click", async () => {
+    toggleMainLoader(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert(getTranslation("alert_login_to_create_build"));
+        return;
+      }
+      const defaultBuildName = `${
+        getTranslation("new_build_default_name_prefix") || "Нова збірка"
+      } ${new Date().toLocaleTimeString(
+        currentLanguage === "uk" ? "uk-UA" : "en-US",
+        { hour: "2-digit", minute: "2-digit" }
+      )}`;
+      const res = await fetch(API.create, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: defaultBuildName, components: [] }),
       });
-    const res = await fetch(API.create, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ name: defaultBuildName, components: [] }),
-    });
-    if (!res.ok)
-      throw new Error(`Не вдалося створити нову збірку: ${res.status}`);
-    const b = await res.json();
+      if (!res.ok)
+        throw new Error(
+          `${
+            getTranslation("error_creating_build_status") ||
+            "Не вдалося створити нову збірку"
+          }: ${res.status}`
+        );
+      const b = await res.json();
 
-    await loadBuildList();
-    buildSelector.value = b._id;
-    await loadBuild(b._id);
-    currentBuildId = b._id;
-  } catch (error) {
-    console.error("Помилка створення нової збірки:", error);
-    alert("Не вдалося створити нову збірку. Спробуйте ще раз.");
-  } finally {
-    toggleMainLoader(false);
-  }
-});
+      await loadBuildList();
+      if (buildSelector) buildSelector.value = b._id;
+      await loadBuild(b._id);
+      currentBuildId = b._id;
+    } catch (error) {
+      console.error("Помилка створення нової збірки:", error);
+      alert(getTranslation("alert_error_creating_build"));
+    } finally {
+      toggleMainLoader(false);
+    }
+  });
+}
 
-// Event listener for build selector change
-buildSelector.addEventListener("change", () => {
-  if (buildSelector.value) {
-    loadBuild(buildSelector.value);
-  }
-});
+if (buildSelector) {
+  buildSelector.addEventListener("change", () => {
+    if (buildSelector.value && buildSelector.value !== "") {
+      loadBuild(buildSelector.value);
+    }
+  });
+}
 
-// Event listener for build name edit
 if (buildNameElement) {
   buildNameElement.addEventListener("blur", async () => {
-    const newName = buildNameElement.textContent.trim() || "Без назви";
+    const newName =
+      buildNameElement.textContent.trim() ||
+      getTranslation("unnamed_build_placeholder");
     buildNameElement.textContent = newName;
     if (!currentBuildId) return;
-
     const token = localStorage.getItem("token");
     if (!token) return;
-
-    const optionInSelector = buildSelector.querySelector(
+    const optionInSelector = buildSelector?.querySelector(
       `option[value="${currentBuildId}"]`
     );
-    if (optionInSelector) {
-      optionInSelector.textContent = newName;
-    }
-    // Update current build name in sidebar
+    if (optionInSelector) optionInSelector.textContent = newName;
     const currentBuildNameDisplay =
       document.getElementById("current-build-name");
     if (currentBuildNameDisplay) currentBuildNameDisplay.textContent = newName;
-
     try {
       await fetch(API.update(currentBuildId), {
         method: "PUT",
@@ -563,16 +961,14 @@ if (buildNameElement) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newName }), // Only send name if only name changed
+        body: JSON.stringify({ name: newName }),
       });
     } catch (error) {
       console.error("Помилка оновлення назви збірки:", error);
-      // Optionally revert name if API call fails
     }
   });
 }
 
-// Auto-save build changes (components and description)
 window.addEventListener("buildUpdated", async () => {
   if (!currentBuildId || isSaving) return;
   isSaving = true;
@@ -582,15 +978,7 @@ window.addEventListener("buildUpdated", async () => {
     return;
   }
 
-  const buildDataToSave = {
-    components: getCurrentPartsData(),
-    // description: buildDescriptionOutput ? buildDescriptionOutput.value : undefined // Save description too
-  };
-  // Only include description if the element exists and has a value
-  if (buildDescriptionOutput && buildDescriptionOutput.value.trim() !== "") {
-    buildDataToSave.description = buildDescriptionOutput.value.trim();
-  }
-
+  const buildDataToSave = { components: getCurrentPartsData() };
   try {
     await fetch(API.update(currentBuildId), {
       method: "PUT",
@@ -607,46 +995,45 @@ window.addEventListener("buildUpdated", async () => {
   }
 });
 
-/**
- * Gemini API Integration: Generates a build description.
- */
-async function handleGenerateDescription() {
-  if (!generateDescriptionBtn || !descriptionLoader || !buildDescriptionOutput)
-    return;
-
-  if (Object.keys(selectedParts).length === 0) {
-    buildDescriptionOutput.value =
-      "Будь ласка, додайте компоненти до збірки, щоб згенерувати опис.";
-    return;
-  }
-
-  generateDescriptionBtn.disabled = true;
-  descriptionLoader.style.display = "flex";
-  buildDescriptionOutput.value = ""; // Clear previous
-
-  const partNames = Object.values(selectedParts)
-    .map((part) => getProductDisplayTitle(part.specs))
-    .filter(
-      (name) =>
-        name && name !== "Невідомий компонент" && name !== "Компонент без назви"
+async function showGeminiResponseInModal(
+  modalTitleKey,
+  prompt,
+  triggerButtonElement
+) {
+  if (
+    !geminiResponseModalOverlay ||
+    !geminiResponseModalTitle ||
+    !geminiResponseLoader ||
+    !geminiResponseModalOutput
+  ) {
+    console.error(
+      "Один або декілька елементів модального вікна Gemini не знайдено."
     );
-
-  if (partNames.length === 0) {
-    buildDescriptionOutput.value =
-      "Не вдалося отримати назви компонентів для генерації опису.";
-    descriptionLoader.style.display = "none";
-    generateDescriptionBtn.disabled = false;
     return;
   }
+  const tempDetailContent = geminiResponseModalOverlay.querySelector(
+    ".temp-detail-content"
+  );
+  if (tempDetailContent) tempDetailContent.style.display = "none";
+  if (geminiResponseModalOutput.tagName === "TEXTAREA") {
+    geminiResponseModalOutput.style.display = "block";
+  }
 
-  const prompt = `Створи коротке, привабливе та інформативне маркетингове описання для збірки ПК з наступними основними компонентами: ${partNames.join(
-    ", "
-  )}. Згадай, для яких завдань (наприклад, ігри, робота, навчання, творчість) ця збірка може підійти. Опис має бути на українській мові. Зроби його приблизно 2-4 речення.`;
+  translateDynamicElement(geminiResponseModalTitle, modalTitleKey);
+  const loaderTextElement = geminiResponseLoader.querySelector("p");
+  if (loaderTextElement)
+    translateDynamicElement(loaderTextElement, "processing_request");
+
+  geminiResponseModalOutput.value = "";
+  geminiResponseLoader.style.display = "flex";
+  geminiResponseModalOverlay.style.display = "flex";
+  document.body.style.overflow = "hidden";
+
+  if (triggerButtonElement) triggerButtonElement.disabled = true;
 
   try {
-    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-    const payload = { contents: chatHistory };
-    const apiKey = ""; // Canvas will provide this
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+    const apiKey = "";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
@@ -657,74 +1044,342 @@ async function handleGenerateDescription() {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Помилка Gemini API:", errorData);
       throw new Error(
-        `Помилка API: ${errorData.error?.message || response.status}`
+        `${getTranslation("api_error_prefix") || "Помилка API"}: ${
+          errorData.error?.message || response.status
+        }`
       );
     }
-
     const result = await response.json();
-
-    if (
-      result.candidates &&
-      result.candidates.length > 0 &&
-      result.candidates[0].content &&
-      result.candidates[0].content.parts &&
-      result.candidates[0].content.parts.length > 0
-    ) {
-      const text = result.candidates[0].content.parts[0].text;
-      buildDescriptionOutput.value = text.trim();
-      window.dispatchEvent(new Event("buildUpdated")); // Trigger auto-save for the new description
+    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
+      geminiResponseModalOutput.value =
+        result.candidates[0].content.parts[0].text.trim();
     } else {
-      console.error("Неочікувана структура відповіді від Gemini API:", result);
-      buildDescriptionOutput.value =
-        "Не вдалося згенерувати опис. Спробуйте ще раз.";
+      geminiResponseModalOutput.value = getTranslation(
+        "gemini_error_unexpected_response"
+      );
     }
   } catch (error) {
-    console.error("Помилка при генерації опису:", error);
-    buildDescriptionOutput.value = `Помилка: ${error.message}. Перевірте консоль для деталей.`;
+    console.error("Помилка при взаємодії з Gemini API:", error);
+    geminiResponseModalOutput.value = `${
+      getTranslation("error_prefix") || "Помилка"
+    }: ${error.message}. ${
+      getTranslation("check_console_details") || "Перевірте консоль."
+    }`;
   } finally {
-    descriptionLoader.style.display = "none";
-    generateDescriptionBtn.disabled = false;
+    if (geminiResponseLoader) geminiResponseLoader.style.display = "none";
+    if (triggerButtonElement) triggerButtonElement.disabled = false;
   }
+}
+
+if (closeGeminiResponseModalBtn) {
+  closeGeminiResponseModalBtn.addEventListener("click", () => {
+    if (geminiResponseModalOverlay)
+      geminiResponseModalOverlay.style.display = "none";
+    document.body.style.overflow = "";
+    const tempContent = geminiResponseModalOverlay.querySelector(
+      ".temp-detail-content"
+    );
+    if (tempContent) tempContent.style.display = "none";
+    if (
+      geminiResponseModalOutput &&
+      geminiResponseModalOutput.tagName === "TEXTAREA"
+    ) {
+      geminiResponseModalOutput.style.display = "block";
+    }
+  });
+}
+if (geminiResponseModalOverlay) {
+  geminiResponseModalOverlay.addEventListener("click", (event) => {
+    if (event.target === geminiResponseModalOverlay) {
+      geminiResponseModalOverlay.style.display = "none";
+      document.body.style.overflow = "";
+      const tempContent = geminiResponseModalOverlay.querySelector(
+        ".temp-detail-content"
+      );
+      if (tempContent) tempContent.style.display = "none";
+      if (
+        geminiResponseModalOutput &&
+        geminiResponseModalOutput.tagName === "TEXTAREA"
+      ) {
+        geminiResponseModalOutput.style.display = "block";
+      }
+    }
+  });
+}
+
+if (closeProductDetailModalBtn) {
+  closeProductDetailModalBtn.addEventListener("click", () => {
+    if (productDetailModalOverlay)
+      productDetailModalOverlay.style.display = "none";
+    document.body.style.overflow = "";
+  });
+}
+if (productDetailModalOverlay) {
+  productDetailModalOverlay.addEventListener("click", (event) => {
+    if (event.target === productDetailModalOverlay) {
+      productDetailModalOverlay.style.display = "none";
+      document.body.style.overflow = "";
+    }
+  });
+}
+
+async function handleGenerateDescription() {
+  if (Object.keys(selectedParts).length === 0) {
+    alert(getTranslation("alert_add_components_for_description"));
+    return;
+  }
+  const partDetails = Object.entries(selectedParts)
+    .map(([category, part]) => {
+      return `${getTranslation(category)}: ${getProductDisplayTitle(
+        part.specs
+      )}`;
+    })
+    .join("\n- ");
+
+  const promptTextMain = getTranslation(
+    currentLanguage === "uk"
+      ? "prompt_generate_description_uk_template"
+      : "prompt_generate_description_en_template"
+  );
+  const prompt = promptTextMain.replace("{partDetails}", partDetails);
+
+  await showGeminiResponseInModal(
+    "gemini_modal_title_description",
+    prompt,
+    generateDescriptionBtn
+  );
+}
+
+async function handleGetCompatibilityAdvice() {
+  if (Object.keys(selectedParts).length < 2) {
+    alert(getTranslation("alert_add_min_two_components_for_compatibility"));
+    return;
+  }
+  const crucialParts = ["CPU", "Motherboard", "RAM", "GPU", "PSU", "PCCase"];
+  let componentsList =
+    getTranslation("compatibility_components_list_header") + "\n";
+  crucialParts.forEach((category) => {
+    if (selectedParts[category]) {
+      const part = selectedParts[category];
+      let details = `${getTranslation(category)}: ${getProductDisplayTitle(
+        part.specs
+      )}`;
+      if (category === "CPU" && part.specs?.socket)
+        details += ` (${getTranslation("socket_label")}: ${part.specs.socket})`;
+      if (category === "Motherboard" && part.specs?.socket)
+        details += ` (${getTranslation("socket_label")}: ${part.specs.socket})`;
+      if (category === "Motherboard" && part.specs?.chipset)
+        details += ` (${getTranslation("chipset_label")}: ${
+          part.specs.chipset
+        })`;
+      if (category === "Motherboard" && part.specs?.memory?.ram_type)
+        details += ` (${getTranslation("ram_type_label")}: ${
+          part.specs.memory.ram_type
+        })`;
+      if (category === "RAM" && part.specs?.type)
+        details += ` (${getTranslation("type_label")}: ${part.specs.type})`;
+      if (category === "GPU" && part.specs?.length_mm)
+        details += ` (${getTranslation("length_label")}: ${
+          part.specs.length_mm
+        }мм)`;
+      if (category === "PSU" && part.specs?.wattage)
+        details += ` (${getTranslation("wattage_label")}: ${
+          part.specs.wattage
+        }Вт)`;
+      if (category === "PCCase" && part.specs?.max_video_card_length_mm)
+        details += ` (${getTranslation("max_gpu_length_label")}: ${
+          part.specs.max_video_card_length_mm
+        }мм)`;
+      componentsList += `- ${details}\n`;
+    }
+  });
+  const promptTextMain = getTranslation(
+    currentLanguage === "uk"
+      ? "prompt_compatibility_advice_uk_template"
+      : "prompt_compatibility_advice_en_template"
+  );
+  const promptCompatibilityQuestion = getTranslation(
+    "compatibility_advice_question"
+  );
+  const prompt = `${promptTextMain}\n${componentsList}\n${promptCompatibilityQuestion}`;
+  await showGeminiResponseInModal(
+    "gemini_modal_title_compatibility",
+    prompt,
+    getCompatibilityAdviceBtn
+  );
+}
+
+async function handleEstimatePerformance() {
+  if (Object.keys(selectedParts).length === 0) {
+    alert(getTranslation("alert_add_components_for_performance"));
+    return;
+  }
+  let componentsDetails =
+    getTranslation("performance_components_list_header") + "\n";
+  Object.entries(selectedParts).forEach(([category, part]) => {
+    let details = `${getTranslation(category)}: ${getProductDisplayTitle(
+      part.specs
+    )}`;
+    if (category === "CPU" && part.specs?.cores)
+      details += ` (${part.specs.cores} ${getTranslation("cores_label")}/${
+        part.specs.threads || part.specs.cores
+      } ${getTranslation("threads_label")})`;
+    if (category === "RAM" && part.specs?.capacity && part.specs?.ram_type)
+      details += ` (${part.specs.capacity}GB ${part.specs.ram_type} ${
+        part.specs.speed_mhz || ""
+      }MHz)`;
+    if (category === "GPU" && part.specs?.memory_size)
+      details += ` (${part.specs.memory_size}GB VRAM)`;
+    if (category === "Storage" && part.specs?.type && part.specs?.capacity)
+      details += ` (${
+        getTranslation(
+          "spec_key_" + part.specs.type.toLowerCase().replace(/\s+/g, "_")
+        ) || part.specs.type
+      } ${part.specs.capacity}GB)`;
+    componentsDetails += `- ${details}\n`;
+  });
+  const promptTextMain = getTranslation(
+    currentLanguage === "uk"
+      ? "prompt_estimate_performance_uk_template"
+      : "prompt_estimate_performance_en_template"
+  );
+  const prompt = `${promptTextMain}\n${componentsDetails}`;
+  await showGeminiResponseInModal(
+    "gemini_modal_title_performance",
+    prompt,
+    estimatePerformanceBtn
+  );
 }
 
 if (generateDescriptionBtn) {
   generateDescriptionBtn.addEventListener("click", handleGenerateDescription);
 }
+if (getCompatibilityAdviceBtn) {
+  getCompatibilityAdviceBtn.addEventListener(
+    "click",
+    handleGetCompatibilityAdvice
+  );
+}
+if (estimatePerformanceBtn) {
+  estimatePerformanceBtn.addEventListener("click", handleEstimatePerformance);
+}
 
-// Initial load logic
+window.addEventListener("languageChanged", () => {
+  translatePage();
+  const mainLoaderText = mainBuildLoaderOverlay?.querySelector("p");
+  if (mainLoaderText)
+    translateDynamicElement(mainLoaderText, "loading_build_data");
+
+  const quickAddLoaderText = document
+    .getElementById("quickAddLoader")
+    ?.querySelector("p");
+  if (quickAddLoaderText)
+    translateDynamicElement(quickAddLoaderText, "loading_components");
+
+  const geminiModalLoaderText = geminiResponseLoader?.querySelector("p");
+  if (geminiModalLoaderText)
+    translateDynamicElement(geminiModalLoaderText, "processing_request");
+
+  if (
+    compatibilitySpan &&
+    compatibilitySpan.textContent !==
+      getTranslation("compatibility_status_unknown")
+  ) {
+    const isCompatible = compatibilitySpan.style.color === "var(--success)";
+    translateDynamicElement(
+      compatibilitySpan,
+      isCompatible
+        ? "compatibility_status_compatible"
+        : "compatibility_status_incompatible"
+    );
+  }
+  if (generateDescriptionBtn)
+    generateDescriptionBtn.innerHTML = `✨ ${getTranslation(
+      "generate_description_btn"
+    )}`;
+  if (getCompatibilityAdviceBtn)
+    getCompatibilityAdviceBtn.innerHTML = `✨ ${getTranslation(
+      "compatibility_advice_btn"
+    )}`;
+  if (estimatePerformanceBtn)
+    estimatePerformanceBtn.innerHTML = `✨ ${getTranslation(
+      "estimate_performance_btn"
+    )}`;
+
+  if (
+    productDetailModalOverlay &&
+    productDetailModalOverlay.style.display === "flex" &&
+    productDetailModalTitleElement
+  ) {
+    const currentProductNameInModal = productDetailName?.textContent || "";
+    productDetailModalTitleElement.textContent = getTranslation(
+      "part_details_title_modal",
+      undefined,
+      { partName: currentProductNameInModal }
+    );
+  }
+  // Обновляем текст кнопки "Add to Build" в модальном окне деталей продукта при смене языка
+  const currentDetailModalAddToBuildButton = document.getElementById(
+    "productDetailAddToBuildBtn"
+  );
+  if (currentDetailModalAddToBuildButton) {
+    const btnTextSpan =
+      currentDetailModalAddToBuildButton.querySelector("span");
+    if (btnTextSpan) {
+      btnTextSpan.textContent = getTranslation("add_to_build_btn_modal");
+    } else {
+      currentDetailModalAddToBuildButton.innerHTML = `<i class="fas fa-plus-circle"></i> ${getTranslation(
+        "add_to_build_btn_modal"
+      )}`;
+    }
+  }
+});
+
 (async function init() {
   await loadBuildList();
   const urlParams = new URLSearchParams(window.location.search);
   const configIdFromUrl = urlParams.get("config");
-
   let initialBuildId = null;
 
   if (
     configIdFromUrl &&
-    buildSelector.querySelector(`option[value="${configIdFromUrl}"]`)
+    buildSelector?.querySelector(`option[value="${configIdFromUrl}"]`)
   ) {
     initialBuildId = configIdFromUrl;
-    buildSelector.value = configIdFromUrl;
-  } else if (buildSelector.options.length > 0 && buildSelector.value) {
+    if (buildSelector) buildSelector.value = configIdFromUrl;
+  } else if (
+    buildSelector?.options.length > 0 &&
+    buildSelector.value &&
+    buildSelector.value !== ""
+  ) {
     initialBuildId = buildSelector.value;
   }
 
   if (initialBuildId) {
     await loadBuild(initialBuildId);
-  } else if (localStorage.getItem("token")) {
+  } else if (localStorage.getItem("token") && newBuildBtn) {
     newBuildBtn.click();
   } else {
-    if (buildNameElement) buildNameElement.textContent = "Увійдіть, щоб почати";
-    totalPriceSpan.textContent = "0";
-    if (compatibilitySpan) compatibilitySpan.textContent = "-";
-    totalTdpSpan.textContent = "0";
-    if (buildDateSpan) buildDateSpan.textContent = "-";
-    if (buildAuthorSpan) buildAuthorSpan.textContent = "-";
+    if (buildNameElement)
+      buildNameElement.textContent = getTranslation("login_to_start");
+    if (totalPriceSpan) totalPriceSpan.textContent = "0";
+    if (compatibilitySpan)
+      translateDynamicElement(
+        compatibilitySpan,
+        "compatibility_status_unknown"
+      );
+    if (compatibilityAdvisorTriggerSection)
+      compatibilityAdvisorTriggerSection.style.display = "none";
+    if (totalTdpSpan) totalTdpSpan.textContent = "0";
+    if (buildDateSpan) buildDateSpan.textContent = "—";
+    if (buildAuthorSpan) buildAuthorSpan.textContent = "—";
     document
       .querySelectorAll(".part-category .add-btn")
       .forEach((btn) => (btn.disabled = true));
     if (generateDescriptionBtn) generateDescriptionBtn.disabled = true;
+    if (getCompatibilityAdviceBtn) getCompatibilityAdviceBtn.disabled = true;
+    if (estimatePerformanceBtn) estimatePerformanceBtn.disabled = true;
   }
+  translatePage();
 })();

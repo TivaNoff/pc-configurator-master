@@ -1,14 +1,49 @@
 :root {
+  /* Dark Theme (Default) */
   --bg: #131314;
   --bg-alt: #0a0a0a;
-  --bg-rgb: 19, 19, 20; /* Added for rgba background */
+  --bg-rgb: 19, 19, 20;
   --fg: #eee;
+  --fg-alt: #ccc; /* Slightly lighter text for less emphasis */
   --accent: #8b5cf6;
-  --accent-hover: #7c4dff; /* Slightly lighter for hover */
+  --accent-hover: #7c4dff;
   --border: #333;
+  --border-light: #444; /* Lighter border for subtle divisions */
   --success: #4caf50;
-  --error-color: #f44336; /* Renamed from --error to avoid conflict */
+  --error-color: #f44336;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --button-text-color: #fff;
+  --input-bg: var(--bg);
+  --input-fg: var(--fg);
+  --placeholder-color: #777;
+  --modal-bg: var(--bg);
+  --modal-alt-bg: var(--bg-alt);
 }
+
+.light-theme {
+  /* Light Theme */
+  --bg: #f4f5f7;
+  --bg-alt: #ffffff;
+  --bg-rgb: 244, 245, 247;
+  --fg: #212529;
+  --fg-alt: #555;
+  --accent: #6a11cb; /* Adjusted accent for light theme */
+  --accent-hover: #560bad;
+  --border: #dee2e6;
+  --border-light: #ced4da;
+  --success: #28a745;
+  --error-color: #dc3545;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --button-text-color: #fff; /* Keep button text white for accent bg */
+  --input-bg: #fff;
+  --input-fg: var(--fg);
+  --placeholder-color: #888;
+  --modal-bg: var(
+    --bg-alt
+  ); /* Modals on light theme often use the whitest bg */
+  --modal-alt-bg: var(--bg);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -19,8 +54,9 @@
 }
 body {
   background: var(--bg);
-  color: #e2e2e2;
+  color: var(--fg);
   min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
 }
 a {
   color: var(--accent);
@@ -30,37 +66,24 @@ a:hover {
   text-decoration: underline;
 }
 .error {
-  /* This class is used for form errors in auth.js */
   color: var(--error-color);
   margin-top: 0.5rem;
 }
 .app {
   display: flex;
   height: 100vh;
-  background: var(--bg-alt);
+  background: var(
+    --bg-alt
+  ); /* Sidebar and main area might have different main backgrounds */
 }
 .sidebar {
   width: 240px;
-  background: var(--bg-alt);
+  background: var(--bg-alt); /* Sidebar background */
   display: flex;
   flex-direction: column;
   padding: 16px;
   border-right: 1px solid var(--border);
-}
-.sidebar h2 {
-  margin-bottom: 1rem;
-}
-.sidebar nav ul {
-  list-style: none;
-}
-.sidebar nav li {
-  margin: 0.5rem 0;
-}
-.sidebar nav a {
-  color: var(--fg);
-}
-.sidebar nav a:hover {
-  color: #fff;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .main {
   flex: 1;
@@ -68,9 +91,10 @@ a:hover {
   flex-direction: column;
   overflow-y: auto;
   border-radius: 4px;
-  background-color: var(--bg);
+  background-color: var(--bg); /* Main content area background */
   margin: 0.35rem 0.35rem 2.75rem 0;
   position: relative;
+  transition: background-color 0.3s;
 }
 .header {
   display: flex;
@@ -78,14 +102,11 @@ a:hover {
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid var(--border);
+  transition: border-color 0.3s;
 }
 .header h1 {
   font-size: 1.2rem;
-}
-.header .controls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  color: var(--fg);
 }
 .header .controls span {
   font-weight: bold;
@@ -94,13 +115,14 @@ a:hover {
 .header .controls button {
   background: var(--accent);
   border: none;
-  color: #fff;
+  color: var(--button-text-color);
   padding: 0.5rem 1rem;
   cursor: pointer;
   border-radius: 3px;
+  transition: background-color 0.3s;
 }
 .header .controls button:hover {
-  background-color: var(--accent-hover); /* Use hover variable */
+  background-color: var(--accent-hover);
 }
 .parts-list {
   display: flex;
@@ -119,17 +141,20 @@ a:hover {
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem;
-  color: #979799;
+  color: var(--fg-alt); /* Use fg-alt for less emphasis */
   border-top: var(--border) solid 1px;
   border-left: var(--border) solid 1px;
   border-right: var(--border) solid 1px;
+  transition: border-color 0.3s, color 0.3s;
 }
 .part-category-titel {
   flex-direction: row;
+  color: var(--fg); /* Title text more prominent */
 }
 .part-category-titel h3 {
   font-size: 1rem;
   font-weight: 600;
+  color: var(--fg);
 }
 .part-category:first-of-type {
   border-radius: 4px 4px 0 0;
@@ -139,26 +164,24 @@ a:hover {
   border-radius: 0 0 4px 4px;
 }
 .part-category .add-btn {
-  background: #1e2024;
+  background: var(--input-bg); /* Use input-bg for consistency */
   border: var(--border) 1px solid;
-  color: #b8b8b8;
+  color: var(--fg-alt);
   font-weight: 500;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
   border-radius: 3px;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 .part-category .add-btn:hover {
   background-color: var(--accent);
-  color: #ffffff;
+  color: var(--button-text-color);
+  border-color: var(--accent-hover);
 }
 .part-category h3 {
   font-size: 1rem;
   font-weight: 600;
-}
-.swap-btn {
-  /* This class might be redundant if add-btn handles both states */
-  /* background: none !important; */ /* Consider removing if not needed */
+  color: var(--fg);
 }
 .selected-part {
   display: flex;
@@ -173,8 +196,9 @@ a:hover {
   border-radius: 4px;
   width: 5rem;
   height: 3.5rem;
-  background: white;
+  background: #fff; /* Keep white for product images for now, or make it a variable */
   padding: 3px;
+  border: 1px solid var(--border-light);
 }
 .sp-info {
   flex: 1;
@@ -187,7 +211,7 @@ a:hover {
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.3rem;
-  color: #e2e2e2;
+  color: var(--fg); /* Main text color */
   flex-grow: 1;
 }
 .sp-price {
@@ -207,7 +231,7 @@ a:hover {
 }
 .sp-buy {
   background: var(--accent);
-  color: #fff;
+  color: var(--button-text-color);
   padding: 0.2rem 0.6rem;
   text-decoration: none;
   border-radius: 5px;
@@ -220,7 +244,7 @@ a:hover {
 .sp-remove {
   background: transparent;
   border: none;
-  color: var(--fg);
+  color: var(--fg-alt);
   cursor: pointer;
   font-size: 1.2rem;
   line-height: 1;
@@ -233,43 +257,43 @@ a:hover {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(var(--bg-rgb), 0.8); /* Slightly darker overlay */
+  background: rgba(var(--bg-rgb), 0.8);
   display: none;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  transition: background-color 0.3s;
 }
 .overlay.active {
   display: flex;
 }
 .filter-sidebar {
   flex: 0 0 280px;
-  background: var(--bg-alt);
+  background: var(--modal-alt-bg); /* Use modal-alt-bg for filter sidebar */
   padding: 1rem;
   overflow-y: auto;
   border-right: 1px solid var(--border);
+  transition: background-color 0.3s, border-color 0.3s;
 }
-.filter-sidebar h4 {
+.filter-sidebar h4,
+.filter-sidebar h5 {
   margin-bottom: 0.5rem;
+  color: var(--fg);
 }
 .filter-sidebar label {
-  /* General label styling in filter sidebar */
-  display: flex; /* Changed from block for better alignment with checkbox */
+  display: flex;
   align-items: center;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: var(--fg);
   margin-bottom: 0.5rem;
-  padding: 2px 0;
 }
 .filter-sidebar hr {
   border: none;
   border-top: 1px solid var(--border);
   width: 100%;
-  margin: 20px 0; /* Adjusted margin */
-}
-.filter-sidebar h5 {
-  margin-bottom: 0.3rem;
+  margin: 20px 0;
+  transition: border-color 0.3s;
 }
 .filter-sidebar input[type="range"] {
   width: 100%;
@@ -283,9 +307,10 @@ a:hover {
   overflow-y: auto;
   background: var(--bg);
   position: relative;
+  transition: background-color 0.3s;
 }
 .card {
-  background: var(--bg-alt);
+  background: var(--bg-alt); /* Card background */
   border: 1px solid var(--border);
   border-radius: 4px;
   display: flex;
@@ -293,9 +318,15 @@ a:hover {
   gap: 0.5rem;
   cursor: pointer;
   height: fit-content;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color 0.2s, transform 0.2s, border-color 0.2s;
+}
+.light-theme .card:hover {
+  background-color: #e9ecef; /* Lighter hover for light theme */
+  border-color: var(--border-light);
+  transform: translateY(-3px);
 }
 .card:hover {
+  /* Default dark theme hover */
   background-color: #0f0f1a;
   transform: translateY(-3px);
 }
@@ -309,13 +340,14 @@ a:hover {
 .card-img {
   text-align: center;
   height: 100px;
-  background: #fff;
+  background: #fff; /* Keep white for product images */
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
   padding: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-bottom: 1px solid var(--border-light); /* Subtle separator */
 }
 .card-img img {
   max-width: 100%;
@@ -326,21 +358,22 @@ a:hover {
   font-size: 0.9rem;
   line-height: 1.2;
   white-space: normal;
-  max-height: 3.6em; /* Roughly 3 lines */
+  max-height: 3.6em;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* Limit to 3 lines */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  color: var(--fg);
 }
 .card-price {
-  color: var(--accent);
+  color: var(--success);
   font-weight: bold;
 }
 .card-specs {
   list-style: none;
   font-size: 0.8rem;
-  color: #ccc;
+  color: var(--fg-alt);
   flex: 1;
   margin-top: 0.5rem;
 }
@@ -352,7 +385,7 @@ a:hover {
 }
 .add-to-build {
   background: var(--accent);
-  color: #fff;
+  color: var(--button-text-color);
   border: none;
   padding: 0.4rem;
   cursor: pointer;
@@ -368,30 +401,34 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: var(--bg-alt);
+  background: var(--modal-alt-bg); /* Footer of quick add modal */
   border-top: 1px solid var(--border);
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .rows-per-page {
   font-size: 0.9rem;
+  color: var(--fg);
 }
 .rows-per-page select {
   margin-left: 0.5rem;
   padding: 0.2rem;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--input-bg);
+  color: var(--input-fg);
   border: 1px solid var(--border);
   border-radius: 3px;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 .pagination-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+  color: var(--fg);
 }
 .pagination-controls button {
   background: var(--accent);
   border: none;
-  color: #fff;
+  color: var(--button-text-color);
   padding: 0.2rem 0.5rem;
   cursor: pointer;
   border-radius: 3px;
@@ -406,11 +443,11 @@ a:hover {
 }
 .modal-close {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.75rem; /* Adjusted for better spacing */
+  right: 0.75rem;
   background: transparent;
   border: none;
-  color: var(--fg);
+  color: var(--fg-alt);
   font-size: 1.5rem;
   cursor: pointer;
   z-index: 15;
@@ -420,17 +457,20 @@ a:hover {
   color: var(--accent);
 }
 .modal {
+  /* Base modal style for QuickAdd */
   display: flex;
   height: 80%;
   max-height: 700px;
-  background: var(--bg);
+  background: var(--modal-bg); /* Main modal background */
   width: 1240px;
   max-width: 95%;
   position: relative;
   border-radius: 6px;
   overflow: hidden;
   margin: 0 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px var(--shadow-color);
+  border: 1px solid var(--border);
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .quickadd-content {
   flex: 1;
@@ -455,15 +495,16 @@ a:hover {
 .logo-text {
   font-size: 16px;
   font-weight: bold;
-  color: #fff;
+  color: var(--fg);
 }
 .beta {
   font-size: 10px;
-  background: #333;
+  background: var(--border); /* Use border for beta bg */
   padding: 2px 4px;
   border-radius: 4px;
   margin-left: auto;
-  color: #ccc;
+  color: var(--fg-alt);
+  transition: background-color 0.3s, color 0.3s;
 }
 .sidebar-controls {
   display: flex;
@@ -471,13 +512,18 @@ a:hover {
 }
 .sidebar-controls button,
 .sidebar-controls select {
-  background: #2b2b3b;
-  color: #fff;
-  border: none;
+  background: var(--input-bg); /* Use input-bg */
+  color: var(--input-fg);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 6px 8px;
   font-size: 12px;
   cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+.sidebar-controls button:hover,
+.sidebar-controls select:hover {
+  border-color: var(--accent);
 }
 .sidebar-controls select {
   margin-left: 8px;
@@ -489,48 +535,52 @@ a:hover {
 .nav-primary li a,
 .nav-community li a {
   display: block;
-  color: #e0e0e0;
+  color: var(--fg);
   text-decoration: none;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 14px;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 .nav-primary li a:hover,
 .nav-community li a:hover {
-  background: #2b2b3b;
+  background: var(--input-bg); /* Use input-bg for hover */
+  color: var(--accent);
 }
 .nav-community {
   margin-top: 24px;
 }
 .nav-community h3 {
   font-size: 12px;
-  color: #888;
+  color: var(--fg-alt);
   text-transform: uppercase;
   margin-bottom: 8px;
 }
 .current-build {
   margin-top: auto;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border);
   padding-top: 16px;
+  transition: border-color 0.3s;
 }
 .current-build h3 {
   font-size: 12px;
-  color: #888;
+  color: var(--fg-alt);
   margin-bottom: 8px;
 }
 .current-build-info {
-  background: #2b2b3b;
+  background: var(--input-bg); /* Use input-bg */
   border-radius: 4px;
   padding: 8px;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border-light);
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .current-build-info span {
   font-size: 14px;
+  color: var(--fg);
 }
 #current-build-name {
-  /* ID for current build name in sidebar */
   margin-bottom: 4px;
 }
 .sidebar-footer {
@@ -549,7 +599,7 @@ a:hover {
 }
 #signup-btn {
   background: var(--accent);
-  color: #fff;
+  color: var(--button-text-color);
   border: none;
   cursor: pointer;
   margin-bottom: 8px;
@@ -559,11 +609,12 @@ a:hover {
   background-color: var(--accent-hover);
 }
 #login-link {
-  color: #888;
+  color: var(--fg-alt);
   background: none;
+  transition: color 0.2s;
 }
 #login-link:hover {
-  color: #fff;
+  color: var(--accent);
 }
 .build-header {
   display: flex;
@@ -587,25 +638,25 @@ a:hover {
   cursor: pointer;
   padding: 6px 10px;
   border-radius: 4px;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 #new-build:hover {
   background-color: var(--accent);
-  color: #fff;
+  color: var(--button-text-color);
 }
 #build-selector {
-  background: #2b2b3b;
-  border: none;
-  color: #fff;
-  padding: 7px 8px; /* Adjusted padding to match button height better */
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--input-fg);
+  padding: 4px 8px;
   border-radius: 4px;
   font-size: 14px;
-  height: 30px; /* Match button height */
+  height: 30px;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 #build-name {
-  /* Editable build name in main content */
   font-size: 24px;
-  color: #e2e2e2;
+  color: var(--fg);
   outline: none;
   min-width: 120px;
   cursor: text;
@@ -613,20 +664,21 @@ a:hover {
   border-radius: 4px;
   padding: 4px 8px;
   border: 1px solid transparent;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 #build-name:focus {
   border: 1px solid var(--accent);
-  background-color: var(--bg-alt);
+  background-color: var(--input-bg);
 }
 .build-header-right #totalPrice {
   font-size: 18px;
   font-weight: bold;
-  color: #fff;
+  color: var(--fg);
 }
 .build-info-row {
   display: flex;
   flex-direction: column;
-  align-items: left; /* Keep content aligned left */
+  align-items: left;
   position: relative;
 }
 .build-info-row .info-item i {
@@ -634,34 +686,28 @@ a:hover {
   font-size: 1.1rem;
 }
 .info-item.price {
-  color: var(--success); /* Use success color for price */
-}
-.info-item.compatible {
-  /* color: #2196f3; */ /* Color is set dynamically in JS */
+  color: var(--success);
 }
 .info-item.tdp {
-  color: #ff9800;
+  color: #ff9800; /* Keep specific color for TDP */
 }
 .info-item-wrapper {
   display: flex;
   margin: 10px 0;
   flex-wrap: wrap;
-  gap: 5px;
 }
 .price {
-  /* This class is for the info-item, not just text */
   border-top-left-radius: 6px;
   border-bottom-left-radius: 6px;
 }
 .tdp {
-  /* This class is for the info-item */
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
 }
 .build-info {
   width: 830px;
   max-width: 100%;
-  margin-bottom: 1rem; /* Add some space below build info */
+  margin-bottom: 1rem;
 }
 .info-item {
   border: var(--border) solid 1px;
@@ -670,10 +716,11 @@ a:hover {
   font-size: 1rem;
   display: flex;
   align-items: center;
-  color: #ffffff;
+  color: var(--fg);
   letter-spacing: 0.04rem;
-  flex-grow: 1;
   min-width: 150px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  justify-content: center;
 }
 .meta-build-info {
   display: flex;
@@ -717,11 +764,12 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1000; /* Ensure it's above QuickAdd if opened from there */
   padding: 1rem;
 }
 .modal.detail-modal {
-  background: var(--bg-alt);
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 1.5rem;
   overflow-y: auto;
@@ -731,10 +779,13 @@ a:hover {
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
+  box-shadow: 0 5px 20px var(--shadow-color);
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .modal.detail-modal li {
   list-style-type: disc;
   margin-left: 20px;
+  color: var(--fg-alt);
 }
 .detail-title {
   margin: 0 0 1rem;
@@ -746,7 +797,7 @@ a:hover {
   list-style: none;
   margin: 0;
   padding: 0;
-  color: #ccc;
+  color: var(--fg-alt);
 }
 .detail-specs li {
   margin-bottom: 0.5rem;
@@ -762,9 +813,10 @@ a:hover {
   height: auto;
   object-fit: contain;
   border-radius: 4px;
-  background-color: #fff;
+  background-color: #fff; /* Keep white for product images */
   padding: 5px;
   margin-bottom: 1rem;
+  border: 1px solid var(--border-light);
 }
 .sidebar-filter-section {
   flex-direction: column;
@@ -793,8 +845,9 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: var(--bg-alt);
+  background: var(--modal-alt-bg); /* Header of quick add modal */
   border-bottom: 1px solid var(--border);
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .quickadd-header .products-count {
   color: var(--fg);
@@ -805,7 +858,7 @@ a:hover {
   display: flex;
   gap: 1rem;
   align-items: center;
-  margin-right: 20px; /* Keep margin if needed for spacing with close button */
+  margin-right: 20px;
 }
 .quickadd-header .qa-controls label {
   color: var(--fg);
@@ -814,25 +867,26 @@ a:hover {
 .quickadd-header .qa-controls select,
 .quickadd-header .qa-controls #component-search {
   padding: 0.3rem 0.6rem;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--input-bg);
+  color: var(--input-fg);
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 0.9rem;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 .quickadd-header .qa-controls label > select {
   margin-left: 0.25rem;
 }
 .quickadd-header .qa-controls #component-search::placeholder {
-  color: var(--fg);
-  opacity: 0.7;
+  color: var(--placeholder-color);
+  opacity: 0.8;
 }
 .filter-sidebar input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
   width: 1rem;
   height: 1rem;
-  background: var(--bg);
+  background: var(--input-bg); /* Checkbox background */
   border: 2px solid var(--border);
   border-radius: 4px;
   margin-right: 0.5rem;
@@ -854,10 +908,14 @@ a:hover {
   left: 4px;
   width: 4px;
   height: 8px;
-  border: solid var(--bg-alt);
+  border: solid var(--bg-alt); /* Checkmark color should contrast with accent */
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+.light-theme .filter-sidebar input[type="checkbox"]:checked::after {
+  border-color: #fff; /* White checkmark on light theme accent */
+}
+
 .price-filter {
   position: relative;
   width: 100%;
@@ -880,11 +938,13 @@ a:hover {
   height: 4px;
   background: var(--border);
   border-radius: 2px;
+  transition: background-color 0.3s;
 }
 .price-filter input[type="range"]::-moz-range-track {
   height: 4px;
   background: var(--border);
   border-radius: 2px;
+  transition: background-color 0.3s;
 }
 .price-filter input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -892,11 +952,12 @@ a:hover {
   width: 1rem;
   height: 1rem;
   background: var(--accent);
-  border: 2px solid var(--bg-alt);
+  border: 2px solid var(--bg-alt); /* Thumb border contrasts with track */
   border-radius: 50%;
   margin-top: -6px;
   pointer-events: all;
   cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .price-filter input[type="range"]::-moz-range-thumb {
   width: 1rem;
@@ -906,6 +967,7 @@ a:hover {
   border-radius: 50%;
   pointer-events: all;
   cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .price-filter .price-values {
   display: flex;
@@ -916,12 +978,116 @@ a:hover {
   user-select: none;
 }
 .build-meta-text {
-  color: #979799;
+  color: var(--fg-alt);
   font-size: 0.9rem;
+}
+
+/* Gemini Feature Sections Styling */
+.gemini-features-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  border-radius: 4px;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.gemini-feature-trigger {
+  /* Styles for individual button containers if needed */
+}
+
+.gemini-feature-btn {
+  background-color: var(--input-bg);
+  color: var(--button-text-color);
+  border: var(--border) 1px solid;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gemini-feature-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.gemini-feature-btn:disabled {
+  background-color: var(--border);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Generic Modal for Gemini Responses */
+.modal-overlay.gemini-response-modal-overlay {
+  /* More specific selector for Gemini modal overlay */
+  position: fixed;
+  inset: 0;
+  background: rgba(var(--bg-rgb), 0.85);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+  transition: background-color 0.3s;
+}
+
+.gemini-response-modal {
+  /* Styles for the modal content itself */
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 10px 30px var(--shadow-color);
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.gemini-response-modal h3 {
+  color: var(--fg);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.gemini-response-loader-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--fg);
+  padding: 2rem 0;
+  min-height: 150px;
+}
+
+#geminiResponseModalOutput {
+  width: 100%;
+  flex-grow: 1;
+  padding: 0.75rem;
+  background-color: var(--input-bg);
+  color: var(--input-fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: none;
+  min-height: 150px;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+#geminiResponseModalOutput::placeholder {
+  color: var(--placeholder-color);
+  opacity: 0.8;
 }
 
 /* Loader Styles */
 .loader-container {
+  /* For QuickAdd modal loader */
   position: absolute;
   top: 0;
   left: 0;
@@ -935,9 +1101,11 @@ a:hover {
   z-index: 10;
   color: var(--fg);
   border-radius: 6px;
+  transition: background-color 0.3s;
 }
 
 .loader-overlay {
+  /* For full page/section overlay like main build loader */
   position: fixed;
   top: 0;
   left: 0;
@@ -950,38 +1118,26 @@ a:hover {
   align-items: center;
   z-index: 2000;
   color: var(--fg);
+  transition: background-color 0.3s;
 }
 
 .loader-container p,
-.loader-overlay p {
+.loader-overlay p,
+.gemini-response-loader-container p {
   margin-top: 15px;
   font-size: 1.1rem;
+  color: var(--fg);
 }
 
 .loader {
+  /* Main loader and Gemini modal loader */
   border: 6px solid var(--border);
   border-top: 6px solid var(--accent);
   border-radius: 50%;
   width: 50px;
   height: 50px;
   animation: spin 1s linear infinite;
-}
-
-.loader-inline {
-  /* For description generator */
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0;
-  color: var(--fg);
-}
-.loader-small {
-  border: 3px solid var(--border);
-  border-top: 3px solid var(--accent);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  animation: spin 0.8s linear infinite;
+  transition: border-color 0.3s;
 }
 
 @keyframes spin {
@@ -998,52 +1154,308 @@ a:hover {
   position: relative;
 }
 
-/* Gemini Feature Specific Styles */
-.build-description-generator {
-  width: 100%; /* Take full width of its container (build-info) */
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background-color: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+/* ... (все предыдущие стили остаются) ... */
+
+/* NEW: Dedicated Product Detail Modal Styles */
+.product-detail-modal-overlay {
+  /* Uses .modal-overlay styles already defined for Gemini modal */
+  z-index: 1100; /* Ensure it's above other overlays if necessary */
 }
 
-.gemini-feature-btn {
-  background-color: var(--accent);
-  color: white;
+.product-detail-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0; /* Remove padding to use header/content structure */
+  width: 90%;
+  max-width: 900px; /* Can be wider for more details */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 10px 30px var(--shadow-color);
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  overflow: hidden; /* Prevent content from breaking modal radius */
+}
+
+.product-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  background-color: var(--modal-alt-bg); /* Slightly different bg for header */
+}
+
+.product-detail-header h3 {
+  color: var(--fg);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.product-detail-header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.product-detail-header-actions a,
+.product-detail-header-actions button {
+  font-size: 0.85rem;
+  color: var(--fg-alt);
+  text-decoration: none;
+  background: none;
   border: none;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+.product-detail-header-actions a:hover,
+.product-detail-header-actions button:hover {
+  color: var(--accent);
+  background-color: rgba(
+    var(--accent-rgb),
+    0.1
+  ); /* Use accent with low opacity */
+}
+.light-theme .product-detail-header-actions a:hover,
+.light-theme .product-detail-header-actions button:hover {
+  background-color: rgba(var(--accent-rgb), 0.15);
+}
+
+.product-detail-content {
+  display: flex;
+  flex-grow: 1;
+  padding: 1.5rem;
+  gap: 1.5rem; /* Gap between gallery and info */
+  overflow-y: auto; /* Allow content to scroll if it overflows */
+}
+
+.product-detail-gallery {
+  flex: 0 0 300px; /* Fixed width for gallery, or use percentages */
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.product-detail-main-image {
+  width: 100%;
+  height: 280px; /* Adjust as needed */
+  background-color: #fff; /* White background for images */
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.product-detail-main-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.product-detail-thumbnails {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap; /* Allow thumbnails to wrap */
+  max-height: 100px; /* Limit height if many thumbnails */
+  overflow-y: auto;
+}
+
+.product-detail-thumbnails img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border: 2px solid transparent;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  display: inline-flex; /* For icon alignment */
-  align-items: center;
-  gap: 0.5rem; /* Space between icon and text */
+  background-color: #fff;
+  padding: 2px;
+  transition: border-color 0.2s;
 }
 
-.gemini-feature-btn:hover {
+.product-detail-thumbnails img.active,
+.product-detail-thumbnails img:hover {
+  border-color: var(--accent);
+}
+
+.product-detail-info {
+  flex: 1; /* Takes remaining space */
+  display: flex;
+  flex-direction: column;
+}
+
+.product-detail-info h4 {
+  /* Product Name */
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.product-detail-category {
+  font-size: 0.9rem;
+  color: var(--fg-alt);
+  margin-bottom: 1rem;
+}
+.product-detail-category #productDetail3DIcon {
+  margin-left: 0.5em;
+  font-size: 1.1em;
+  color: var(--accent);
+}
+
+.product-detail-main-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.product-action-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--fg);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.product-action-btn i {
+  font-size: 0.9em; /* Adjust icon size if needed */
+}
+
+.product-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.product-action-btn.primary-action-btn {
+  background-color: var(--accent);
+  color: var(--button-text-color);
+  border-color: var(--accent);
+}
+.product-action-btn.primary-action-btn:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--button-text-color);
+}
+
+.product-detail-merchants {
+  margin-bottom: 1rem;
+  border-top: 1px solid var(--border-light);
+  padding-top: 1rem;
+}
+.merchant-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto; /* Name, Availability, Price, Buy Button */
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-light);
+}
+.merchant-row:last-child {
+  border-bottom: none;
+}
+.merchant-name {
+  font-weight: 500;
+  color: var(--fg);
+}
+.merchant-availability {
+  color: var(--success); /* Green for in stock */
+}
+.merchant-availability.out-of-stock {
+  /* Add this class if out of stock */
+  color: var(--error-color);
+}
+.merchant-price {
+  font-weight: 600;
+  color: var(--accent);
+  text-align: right;
+}
+.merchant-buy-btn {
+  background-color: var(--accent);
+  color: var(--button-text-color);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 3px;
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+.merchant-buy-btn:hover {
   background-color: var(--accent-hover);
 }
 
-.gemini-feature-btn:disabled {
-  background-color: var(--border);
-  cursor: not-allowed;
+.affiliate-disclaimer {
+  font-size: 0.75rem;
+  color: var(--fg-alt);
+  margin-top: 0.5rem;
+  text-align: right;
 }
 
-#buildDescriptionOutput {
-  width: 100%;
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  background-color: var(--bg);
+.product-detail-specs-fullwidth {
+  padding: 0 1.5rem 1.5rem 1.5rem; /* Padding for the specs table section */
+  border-top: 1px solid var(--border-light);
+  margin-top: 1rem; /* Space above specs table if merchants are present */
+}
+.product-detail-specs-fullwidth h5 {
+  font-size: 1.1rem;
   color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  min-height: 80px; /* Ensure it's visible even when empty */
-  resize: vertical; /* Allow vertical resize */
+  margin-bottom: 0.75rem;
+  margin-top: 1rem;
 }
 
-#buildDescriptionOutput::placeholder {
-  color: #777;
+.product-detail-specs-fullwidth table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.product-detail-specs-fullwidth th,
+.product-detail-specs-fullwidth td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+.product-detail-specs-fullwidth th {
+  background-color: var(--modal-alt-bg);
+  color: var(--fg-alt);
+  font-weight: 500;
+}
+.product-detail-specs-fullwidth td {
+  color: var(--fg);
+}
+.product-detail-specs-fullwidth tr:last-child td {
+  border-bottom: none;
+}
+
+.opendb-link {
+  display: block;
+  text-align: right;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+/* Ensure modal close button is styled correctly */
+.product-detail-modal .modal-close {
+  top: 0.6rem; /* Adjust position for new header */
+  right: 0.75rem;
+  color: var(--fg-alt);
+}
+.product-detail-modal .modal-close:hover {
+  color: var(--accent);
+}
+
+/* Helper for scrollable content inside modal if needed */
+.scrollable-modal-content {
+  overflow-y: auto;
+  max-height: calc(80vh - 150px); /* Example: 80vh - header/footer height */
+  padding: 1rem; /* Add padding if content is directly inside this */
 }
