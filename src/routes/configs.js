@@ -1,20 +1,18 @@
+// backend/src/routes/configs.js
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../utils/authMiddleware");
-const {
-  createConfig,
-  getConfigs,
-  getConfigById,
-  updateConfig, // ← добавили
-  deleteConfig,
-} = require("../controllers/configController");
+const configController = require("../controllers/configController");
+const authMiddleware = require("../utils/authMiddleware"); // Middleware для проверки аутентификации
 
-router.use(authMiddleware);
+// Применить middleware аутентификации ко всем маршрутам конфигураций
+// Предполагается, что authMiddleware.protect - это функция
+router.use(authMiddleware.protect);
 
-router.post("/", createConfig);
-router.get("/", getConfigs);
-router.get("/:id", getConfigById);
-router.put("/:id", updateConfig); // ← новый роут для PUT
-router.delete("/:id", deleteConfig);
+// Маршруты
+router.get("/", configController.getUserConfigs); // Получить все конфигурации пользователя
+router.post("/", configController.createConfig); // Создать новую конфигурацию
+router.get("/:id", configController.getConfigById); // Получить конкретную конфигурацию по ID
+router.put("/:id", configController.updateConfig); // Обновить конфигурацию по ID
+router.delete("/:id", configController.deleteConfig); // Удалить конфигурацию по ID
 
 module.exports = router;

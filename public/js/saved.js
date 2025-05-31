@@ -1,236 +1,326 @@
-// public/js/quickAdd/listeners.js
-import {
-  applyFiltersAndRender,
-  initFilters,
-  getFilteredProducts,
-  setAllProducts,
-  setCurrentCategory as setFilterCategory,
-} from "./filters.js";
-import { fetchProductsByCategory } from "../components.js";
-import {
-  renderProductsPage,
-  setCurrentPage,
-  setPageSize,
-  setCurrentCategory as setFlowCategory,
-} from "./productFlow.js";
-import { debounce } from "./helpers.js";
+// backend/public/js/saved.js
 
-/**
- * Shows product details in a modal overlay.
- * @param {object} product - The product object.
- */
-function showProductDetails(product) {
-  const s = product.specs || {};
-  const title =
-    product.specs?.metadata?.name ||
-    [s.manufacturer, s.series, s.model].filter(Boolean).join(" ") ||
-    product.opendb_id;
-  const imgUrl = product?.storeImg?.Ekua || "/img/placeholder.png";
-
-  const EXCLUDE_KEYS = new Set([
-    "opendb_id",
-    "general_product_information",
-    "metadata",
-    "compatible",
-    "supports3D",
-    "manufacturer",
-    "series",
-    "model",
-  ]);
-
-  function renderSpecs(obj, level = 0) {
-    if (!obj || typeof obj !== "object") return "";
-
-    return Object.entries(obj)
-      .filter(
-        ([key, value]) =>
-          !EXCLUDE_KEYS.has(key) &&
-          value != null &&
-          value !== "" &&
-          !(Array.isArray(value) && value.length === 0)
-      )
-      .map(([key, value]) => {
-        const displayKey = key
-          .replace(/_/g, " ")
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (str) => str.toUpperCase());
-
-        if (typeof value === "object" && !Array.isArray(value)) {
-          const nestedSpecs = renderSpecs(value, level + 1);
-          return nestedSpecs
-            ? `<li><strong>${displayKey}:</strong><ul>${nestedSpecs}</ul></li>`
-            : "";
-        } else if (Array.isArray(value)) {
-          return `<li><strong>${displayKey}:</strong> ${value.join(", ")}</li>`;
-        } else if (typeof value === "boolean") {
-          return `<li><strong>${displayKey}:</strong> ${
-            value ? "Yes" : "No"
-          }</li>`;
-        } else {
-          return `<li><strong>${displayKey}:</strong> ${String(value)}</li>`;
-        }
-      })
-      .join("");
+document.addEventListener("DOMContentLoaded", async () => {
+  // Apply localization first to ensure `strings` object is populated
+  // This assumes applyLocalization is globally available from localization.js
+  if (typeof applyLocalization === "function") {
+    applyLocalization();
+  } else {
+    console.error(
+      "applyLocalization function not found. Ensure localization.js is loaded correctly."
+    );
+    // Fallback strings object to prevent errors, though localization will be broken
+    window.strings = window.strings || {
+      noSavedConfigs: "No saved configurations found (fallback).",
+      errorLoadingConfigs: "Error loading configurations (fallback).",
+      confirmDeleteTitle: "Confirm Deletion (fallback)",
+      confirmDeleteText:
+        "Are you sure you want to delete this configuration? (fallback)",
+      cancel: "Cancel (fallback)",
+      deleteButton: "Delete (fallback)",
+      loadButton: "Load (fallback)",
+      viewButton: "View (fallback)",
+      configDeleted: "Configuration deleted (fallback).",
+      errorDeletingConfig: "Error deleting configuration (fallback).",
+      modalPriceNA: "N/A (fallback)",
+      currencyRU: "руб. (fallback)",
+      currencyEN: "$ (fallback)",
+    };
   }
 
-  const specsList = renderSpecs(s);
+  const token = localStorage.getItem("token");
+  if (!token) {
+    // Redirect to login if not authenticated.
+    // Ensure localization.js has loaded if any strings are needed for this redirect page or messages.
+    window.location.href = "login.html";
+    return; // Stop further execution
+  }
 
-  const detailOverlay = document.createElement("div");
-  detailOverlay.classList.add("detail-overlay");
-  detailOverlay.id = "detailOverlay";
+  // Load and display configurations for the modal and the page (if on saved.html)
+  await loadAndDisplaySavedConfigs();
 
-  const detailModal = document.createElement("div");
-  detailModal.classList.add("modal", "detail-modal");
+  // If there's a specific element for saved.html page title that uses data-translate,
+  // applyLocalization should handle it. If it's dynamic, update it here.
+  const pageTitleElement = document.querySelector("h1"); // Example: if main title needs update
+  if (pageTitleElement && strings.savedBuildsTitle) {
+    // pageTitleElement.textContent = strings.savedBuildsTitle; // If it wasn't covered by data-translate
+  }
+});
 
-  detailModal.innerHTML = `
-    <button class="modal-close" id="closeDetailModal">✕</button>
-    <h3 class="detail-title">${title}</h3>
-    <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
-        <div style="flex: 1; min-width: 200px; text-align: center;">
-            <img src="${imgUrl}" alt="${title}" class="detail-overlay-img" onerror="this.src='/img/placeholder.png'" />
-        </div>
-        <div style="flex: 2; min-width: 300px;">
-            <h4>Характеристики:</h4>
-            <ul class="detail-specs">${
-              specsList || "Додаткові характеристики відсутні."
-            }</ul>
-        </div>
-    </div>
-  `;
+async function loadAndDisplaySavedConfigs() {
+  const token = localStorage.getItem("token");
+  // Try to get the container for the main saved.html page
+  const savedConfigsContainerPage = document.getElementById(
+    "saved-configs-container"
+  );
+  // Try to get the container for the modal
+  const myBuildsModalBody = document.getElementById("myBuildsModalBody");
 
-  detailOverlay.appendChild(detailModal);
-  document.body.appendChild(detailOverlay);
-  document.body.style.overflow = "hidden"; // Prevent background scroll when detail modal is open
+  if (!savedConfigsContainerPage && !myBuildsModalBody) {
+    // console.log("No container found for saved configs (page or modal).");
+    return;
+  }
 
-  const closeDetailButton = detailModal.querySelector("#closeDetailModal");
-  if (closeDetailButton) {
-    closeDetailButton.addEventListener("click", () => {
-      detailOverlay.remove();
-      document.body.style.overflow = ""; // Restore background scroll
+  if (myBuildsModalBody) myBuildsModalBody.innerHTML = ""; // Clear previous modal content
+  if (savedConfigsContainerPage) savedConfigsContainerPage.innerHTML = ""; // Clear previous page content
+
+  try {
+    const response = await fetch("/api/configs", {
+      headers: { Authorization: `Bearer ${token}` },
     });
-  }
-  detailOverlay.addEventListener("click", (e) => {
-    if (e.target === detailOverlay) {
-      detailOverlay.remove();
-      document.body.style.overflow = ""; // Restore background scroll
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  });
-}
+    const configs = await response.json();
 
-/**
- * Sets up all event listeners for the Quick Add functionality.
- */
-export function setupListeners() {
-  const overlay = document.getElementById("quickAddOverlay");
-  const quickAddLoader = document.getElementById("quickAddLoader"); // Get loader
-  const grid = document.getElementById("productsGrid");
-  const compOnly = document.getElementById("compatibilityOnly");
-  const only3d = document.getElementById("only3d");
-  const priceMin = document.getElementById("priceMin");
-  const priceMax = document.getElementById("priceMax");
-  const priceMinVal = document.getElementById("priceMinVal");
-  const priceMaxVal = document.getElementById("priceMaxVal");
-  const rowsPerPageSel = document.getElementById("rowsPerPage");
-  const closeBtn = document.getElementById("closeQuickAdd");
-  const searchInput = document.getElementById("component-search");
-  const sortBySelect = document.getElementById("sortBySelect");
-
-  const debouncedApplyFiltersAndRender = debounce(applyFiltersAndRender, 300);
-
-  document.body.addEventListener("click", async (e) => {
-    if (e.target.matches(".add-btn")) {
-      const catElement = e.target.closest(".part-category");
-      if (!catElement) return;
-      const cat = catElement.dataset.cat;
-
-      overlay.classList.add("active");
-      document.body.style.overflow = "hidden";
-      if (quickAddLoader) quickAddLoader.style.display = "flex"; // Show loader
-      if (grid) grid.innerHTML = ""; // Clear previous products
-
-      setFilterCategory(cat);
-      setFlowCategory(cat);
-
-      try {
-        const data = await fetchProductsByCategory(cat);
-        setAllProducts(data);
-        initFilters();
-        applyFiltersAndRender();
-      } catch (error) {
-        console.error("Помилка завантаження або обробки продуктів:", error);
-        if (grid)
-          grid.innerHTML =
-            '<p style="color: var(--fg); text-align: center; padding: 20px;">Не вдалося завантажити компоненти. Спробуйте ще раз.</p>';
-      } finally {
-        if (quickAddLoader) quickAddLoader.style.display = "none"; // Hide loader
-      }
+    if (configs.length === 0) {
+      const noConfigsMessage =
+        strings.noSavedConfigs || "No saved configurations found.";
+      if (myBuildsModalBody)
+        myBuildsModalBody.innerHTML = `<p class="text-center text-gray-500">${noConfigsMessage}</p>`;
+      if (savedConfigsContainerPage)
+        savedConfigsContainerPage.innerHTML = `<p class="text-center text-gray-500">${noConfigsMessage}</p>`;
+      return;
     }
-  });
 
-  [compOnly, only3d].forEach((el) => {
-    if (el) el.addEventListener("input", applyFiltersAndRender);
-  });
-  if (sortBySelect) {
-    sortBySelect.addEventListener("change", applyFiltersAndRender);
-  }
+    // Create table for modal
+    const table = document.createElement("table");
+    table.className =
+      "min-w-full divide-y divide-gray-200 dark:divide-gray-700";
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300" data-translate="configName">${
+                  strings.configName || "Name"
+                }</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300" data-translate="totalPrice">${
+                  strings.totalPrice || "Total Price"
+                }</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300" data-translate="actions">${
+                  strings.actions || "Actions"
+                }</th>
+            </tr>
+        `;
+    const tbody = document.createElement("tbody");
+    tbody.className =
+      "bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700";
 
-  if (searchInput) {
-    searchInput.addEventListener("input", debouncedApplyFiltersAndRender);
-  }
+    configs.forEach((config) => {
+      const row = tbody.insertRow();
+      row.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
 
-  if (priceMin && priceMax && priceMinVal && priceMaxVal) {
-    priceMin.addEventListener("input", () => {
-      if (+priceMin.value > +priceMax.value) priceMin.value = priceMax.value;
-      priceMinVal.textContent = `₴${priceMin.value}`;
-      debouncedApplyFiltersAndRender();
-    });
+      const nameCell = row.insertCell();
+      nameCell.className =
+        "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white";
+      nameCell.textContent = config.name;
 
-    priceMax.addEventListener("input", () => {
-      if (+priceMax.value < +priceMin.value) priceMax.value = priceMin.value;
-      priceMaxVal.textContent = `₴${priceMax.value}`;
-      debouncedApplyFiltersAndRender();
-    });
-  }
+      const priceCell = row.insertCell();
+      priceCell.className =
+        "px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300";
 
-  if (rowsPerPageSel) {
-    rowsPerPageSel.addEventListener("change", () => {
-      setPageSize(parseInt(rowsPerPageSel.value, 10));
-      setCurrentPage(1);
-      renderProductsPage(getFilteredProducts());
-    });
-  }
+      let formattedPrice;
+      const currentLang = localStorage.getItem("language") || "en";
 
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      overlay.classList.remove("active");
-      document.body.style.overflow = "";
-    });
-  }
-
-  if (grid) {
-    grid.addEventListener("click", (e) => {
-      const card = e.target.closest(".card");
-      if (!card) return;
-
-      const id = card.dataset.id;
-      const product = getFilteredProducts().find((p) => p.opendb_id === id);
-      if (!product) {
-        console.warn("Продукт не знайдено для ID картки:", id);
-        return;
-      }
-
-      if (e.target.matches(".add-to-build")) {
-        window.dispatchEvent(
-          new CustomEvent("add-component", {
-            detail: { category: product.category || currentCategory, product },
-          })
-        );
-        window.dispatchEvent(new Event("buildUpdated"));
-        overlay.classList.remove("active");
-        document.body.style.overflow = "";
+      if (
+        config.totalPrice === null ||
+        typeof config.totalPrice === "undefined" ||
+        isNaN(parseFloat(config.totalPrice))
+      ) {
+        formattedPrice =
+          strings.modalPriceNA || (currentLang === "ru" ? "недоступно" : "N/A");
       } else {
-        showProductDetails(product);
+        const price = parseFloat(config.totalPrice);
+        if (currentLang === "ru") {
+          const currencySymbol = strings.currencyRU || "руб.";
+          formattedPrice = `${price.toLocaleString("ru-RU", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })} ${currencySymbol}`;
+        } else {
+          const currencySymbol = strings.currencyEN || "$";
+          formattedPrice = `${currencySymbol}${price.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`;
+        }
+      }
+      priceCell.textContent = formattedPrice;
+
+      const actionsCell = row.insertCell();
+      actionsCell.className =
+        "px-6 py-4 whitespace-nowrap text-right text-sm font-medium";
+
+      // View/Load Button
+      const loadButton = document.createElement("button");
+      loadButton.textContent = strings.loadButton || "Load";
+      loadButton.className =
+        "text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 mr-3";
+      loadButton.onclick = () => loadConfigToBuilder(config._id);
+
+      // Delete Button
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = strings.deleteButton || "Delete";
+      deleteButton.className =
+        "text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200";
+      deleteButton.onclick = () => confirmDeleteConfig(config._id, config.name);
+
+      actionsCell.appendChild(loadButton);
+      actionsCell.appendChild(deleteButton);
+
+      // If rendering for the main saved.html page, clone the row or create a different display format
+      if (savedConfigsContainerPage) {
+        // For saved.html, you might want a card-based layout or a similar table.
+        // This example just reuses the table structure for simplicity if both are tables.
+        // If savedConfigsContainerPage is not a table body, adjust accordingly.
+        const pageRow = row.cloneNode(true);
+        // Re-attach event listeners if cloneNode doesn't copy them deeply for complex elements
+        pageRow.cells[2].childNodes[0].onclick = () =>
+          loadConfigToBuilder(config._id); // Load
+        pageRow.cells[2].childNodes[1].onclick = () =>
+          confirmDeleteConfig(config._id, config.name); // Delete
+
+        // If savedConfigsContainerPage is the direct container, it needs its own table structure
+        // For this example, assume savedConfigsContainerPage is a tbody element or similar
+        // This part needs to be adapted to the actual structure of saved.html
       }
     });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+
+    if (myBuildsModalBody) {
+      // Populate modal
+      myBuildsModalBody.appendChild(table);
+    }
+
+    if (savedConfigsContainerPage) {
+      // Populate page content
+      // If savedConfigsContainerPage is meant to hold the table directly:
+      const pageTable = table.cloneNode(true); // Clone the whole table for the page
+      // Re-attach event listeners for all buttons in the cloned table
+      const pageTbody = pageTable.querySelector("tbody");
+      if (pageTbody) {
+        Array.from(pageTbody.rows).forEach((row, index) => {
+          const originalConfig = configs[index];
+          const actions = row.cells[2];
+          if (actions && actions.children.length >= 2) {
+            actions.children[0].onclick = () =>
+              loadConfigToBuilder(originalConfig._id); // Load
+            actions.children[1].onclick = () =>
+              confirmDeleteConfig(originalConfig._id, originalConfig.name); // Delete
+          }
+        });
+      }
+      savedConfigsContainerPage.appendChild(pageTable);
+    }
+  } catch (error) {
+    console.error("Error loading configurations:", error);
+    const errorMessage =
+      strings.errorLoadingConfigs || "Error loading configurations.";
+    if (myBuildsModalBody)
+      myBuildsModalBody.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+    if (savedConfigsContainerPage)
+      savedConfigsContainerPage.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
   }
 }
+
+function loadConfigToBuilder(configId) {
+  // Store the config ID to be loaded by build.js
+  localStorage.setItem("loadConfigId", configId);
+  // Redirect to the build page
+  window.location.href = "build.html";
+  // Close the modal if it's open (assuming Bootstrap modal)
+  const modalElement = document.getElementById("myBuildsModal");
+  if (
+    modalElement &&
+    typeof bootstrap !== "undefined" &&
+    bootstrap.Modal.getInstance(modalElement)
+  ) {
+    bootstrap.Modal.getInstance(modalElement).hide();
+  }
+}
+
+async function confirmDeleteConfig(configId, configName) {
+  // Use a custom modal for confirmation if available, otherwise window.confirm
+  // For this example, using window.confirm but ideally replace with a styled modal
+  const title = strings.confirmDeleteTitle || "Confirm Deletion";
+  const text = (
+    strings.confirmDeleteText ||
+    "Are you sure you want to delete this configuration: {configName}?"
+  ).replace("{configName}", configName);
+
+  if (window.confirm(`${title}\n${text}`)) {
+    await deleteConfig(configId);
+  }
+}
+
+async function deleteConfig(configId) {
+  const token = localStorage.getItem("token");
+  try {
+    const response = await fetch(`/api/configs/${configId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Failed to delete configuration." }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+    // alert(strings.configDeleted || 'Configuration deleted.');
+    showToast(strings.configDeleted || "Configuration deleted.", "success");
+    loadAndDisplaySavedConfigs(); // Refresh the list
+  } catch (error) {
+    console.error("Error deleting configuration:", error);
+    // alert((strings.errorDeletingConfig || 'Error deleting configuration.') + ` ${error.message}`);
+    showToast(
+      (strings.errorDeletingConfig || "Error deleting configuration.") +
+        ` ${error.message}`,
+      "error"
+    );
+  }
+}
+
+// Simple Toast Notification Function (add to your global JS or here)
+function showToast(message, type = "info") {
+  const toastContainer =
+    document.getElementById("toast-container") || createToastContainer();
+
+  const toast = document.createElement("div");
+  toast.className = `p-4 mb-4 text-sm rounded-lg shadow-lg`;
+
+  if (type === "success") {
+    toast.className +=
+      " bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100";
+  } else if (type === "error") {
+    toast.className +=
+      " bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100";
+  } else {
+    // info
+    toast.className +=
+      " bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100";
+  }
+
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 5000);
+}
+
+function createToastContainer() {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.className = "fixed top-5 right-5 z-50";
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+// Ensure this function is globally available if called from localization.js changeLanguage
+window.loadAndDisplaySavedConfigs = loadAndDisplaySavedConfigs;

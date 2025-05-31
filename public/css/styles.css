@@ -7,6 +7,7 @@
   --fg-alt: #ccc;
   --accent: #8b5cf6;
   --accent-hover: #7c4dff;
+  --accent-rgb: 139, 92, 246; /* Added for RGBA usage */
   --border: #333;
   --border-light: #444;
   --success: #4caf50;
@@ -23,13 +24,14 @@
 
 .light-theme {
   /* Light Theme */
-  --bg: #f4f5f7;
-  --bg-alt: #ffffff;
+  --bg: #fcfcfc;
+  --bg-alt: #ededed;
   --bg-rgb: 244, 245, 247;
   --fg: #212529;
   --fg-alt: #555;
   --accent: #6a11cb;
   --accent-hover: #560bad;
+  --accent-rgb: 106, 17, 203; /* Added for RGBA usage */
   --border: #dee2e6;
   --border-light: #ced4da;
   --success: #28a745;
@@ -65,10 +67,7 @@ a {
 a:hover {
   text-decoration: underline;
 }
-.error {
-  color: var(--error-color);
-  margin-top: 0.5rem;
-}
+
 .app {
   display: flex;
   height: 100vh;
@@ -164,19 +163,11 @@ a:hover {
   border-radius: 0 0 4px 4px;
 }
 .part-category .add-btn {
-  background: var(--input-bg); /* Use input-bg for consistency */
-  border: var(--border) 1px solid;
-  color: var(--fg-alt);
   font-weight: 500;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
   border-radius: 3px;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-}
-.part-category .add-btn:hover {
-  background-color: var(--accent);
-  color: var(--button-text-color);
-  border-color: var(--accent-hover);
 }
 .part-category h3 {
   font-size: 1rem;
@@ -489,9 +480,7 @@ a:hover {
   margin-bottom: 16px;
 }
 .logo img {
-  width: 32px;
-  height: 32px;
-  margin-right: 8px;
+  width: 9rem;
 }
 .logo-text {
   font-size: 16px;
@@ -558,7 +547,6 @@ a:hover {
   margin-bottom: 8px;
 }
 .current-build {
-  margin-top: auto;
   border-top: 1px solid var(--border);
   padding-top: 16px;
   transition: border-color 0.3s;
@@ -584,39 +572,100 @@ a:hover {
 #current-build-name {
   margin-bottom: 4px;
 }
+
+/* Sidebar Footer & Auth Styling */
 .sidebar-footer {
-  margin-top: 24px;
+  margin-top: auto;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  gap: 0.5rem; /* Space between buttons/user info */
 }
-#signup-btn,
-#login-link {
+
+.sidebar-action-btn {
+  width: 100%;
   text-align: center;
-  padding: 8px;
+  padding: 10px 12px; /* Increased padding */
   border-radius: 4px;
   font-size: 14px;
+  font-weight: 500; /* Slightly bolder */
   text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  border: 1px solid transparent; /* Base border */
 }
-#signup-btn {
+
+#logged-out-view .sidebar-action-btn {
   background: var(--accent);
   color: var(--button-text-color);
-  border: none;
-  cursor: pointer;
-  margin-bottom: 8px;
-  transition: background-color 0.2s;
+  border-color: var(--accent);
 }
-#signup-btn:hover {
+#logged-out-view .sidebar-action-btn:hover {
   background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
-#login-link {
+/* Style for the secondary button if needed, e.g., login if signup is primary */
+#logged-out-view #login-btn-modal {
+  background: var(--input-bg);
   color: var(--fg-alt);
-  background: none;
-  transition: color 0.2s;
+  border: 1px solid var(--border);
 }
-#login-link:hover {
+#logged-out-view #login-btn-modal:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: rgba(var(--accent-rgb), 0.1);
+}
+
+#logged-in-view .user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 8px 12px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  color: var(--fg);
+}
+#logged-in-view .user-info i {
+  font-size: 1.2rem;
   color: var(--accent);
 }
+#logged-in-view #sidebar-username {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#logged-in-view .sidebar-action-btn,
+#new-build,
+.add-btn,
+.gemini-feature-btn,
+.add-to-build,
+#productDetailAddToBuildBtn {
+  background: var(--input-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+#logged-in-view .sidebar-action-btn:hover,
+#new-build:hover,
+.add-btn:hover,
+.gemini-feature-btn:hover,
+.add-to-build:hover,
+#productDetailAddToBuildBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: rgba(var(--accent-rgb), 0.1);
+}
+#logged-in-view #logout-btn {
+  color: var(--error-color);
+  border-color: var(--error-color);
+}
+#logged-in-view #logout-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1); /* Error color with opacity */
+  color: var(--error-color);
+}
+
 .build-header {
   display: flex;
   justify-content: space-between;
@@ -632,18 +681,11 @@ a:hover {
   margin-right: 12px;
 }
 #new-build {
-  background: none;
-  border: 1px solid var(--accent);
-  color: var(--accent);
   font-size: 14px;
   cursor: pointer;
   padding: 6px 10px;
   border-radius: 4px;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-}
-#new-build:hover {
-  background-color: var(--accent);
-  color: var(--button-text-color);
 }
 #build-selector {
   background: var(--input-bg);
@@ -1013,7 +1055,7 @@ a:hover {
 
 .gemini-feature-btn {
   background-color: var(--input-bg);
-  color: var(--button-text-color);
+  color: var(--fg-alt);
   border: var(--border) 1px solid;
   padding: 0.6rem 1rem;
   font-size: 0.95rem;
@@ -1023,10 +1065,6 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.gemini-feature-btn:hover {
-  background-color: var(--accent-hover);
 }
 
 .gemini-feature-btn:disabled {
@@ -1170,8 +1208,6 @@ a:hover {
   position: relative;
 }
 
-/* ... (все предыдущие стили остаются) ... */
-
 /* NEW: Dedicated Product Detail Modal Styles */
 .product-detail-modal-overlay {
   /* Uses .modal-overlay styles already defined for Gemini modal */
@@ -1246,7 +1282,7 @@ a:hover {
   padding: 1.5rem;
   gap: 1.5rem; /* Gap between gallery and info */
   overflow-y: auto; /* Allow content to scroll if it overflows */
-  min-height: 230px;
+  min-height: 260px;
 }
 
 .product-detail-gallery {
@@ -1477,4 +1513,201 @@ a:hover {
   overflow-y: auto;
   max-height: calc(80vh - 150px); /* Example: 80vh - header/footer height */
   padding: 1rem; /* Add padding if content is directly inside this */
+}
+
+/* NEW: Auth Modal Styles */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(var(--bg-rgb), 0.85); /* Darker overlay */
+  display: none; /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1200; /* Higher z-index */
+}
+
+.auth-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem; /* More padding */
+  width: 90%;
+  max-width: 400px; /* Optimal width for auth forms */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 10px 30px var(--shadow-color);
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.auth-modal h3 {
+  color: var(--fg);
+  margin-bottom: 1.5rem; /* More space below title */
+  text-align: center;
+  font-size: 1.5rem; /* Larger title */
+  font-weight: 600;
+}
+
+.auth-modal .form-group {
+  margin-bottom: 1.25rem; /* Space between form fields */
+}
+
+.auth-modal label {
+  display: block;
+  color: var(--fg-alt);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.auth-modal input[type="text"],
+.auth-modal input[type="email"],
+.auth-modal input[type="password"] {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--input-bg);
+  color: var(--input-fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-modal input[type="text"]:focus,
+.auth-modal input[type="email"]:focus,
+.auth-modal input[type="password"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.3);
+}
+
+.auth-modal .auth-submit-btn {
+  width: 100%;
+  background: var(--accent);
+  color: var(--button-text-color);
+  border: none;
+  padding: 0.8rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 0.5rem; /* Space above button */
+}
+
+.auth-modal .auth-submit-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.auth-modal .error-message {
+  color: var(--error-color);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 1rem;
+  min-height: 1.2em; /* Prevent layout shift */
+}
+.auth-modal .auth-switch-text {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--fg-alt);
+}
+.auth-modal .auth-switch-text a {
+  color: var(--accent);
+  font-weight: 500;
+}
+.auth-modal .auth-switch-text a:hover {
+  text-decoration: underline;
+}
+
+/* NEW: My Builds Modal Styles */
+.my-builds-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(var(--bg-rgb), 0.85);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1150; /* Slightly lower than auth modals if they can overlap */
+}
+
+.my-builds-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 600px; /* Wider for build list */
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 10px 30px var(--shadow-color);
+}
+
+.my-builds-modal h3 {
+  color: var(--fg);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+#myBuildsListContainer {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-top: 1rem;
+}
+
+.my-builds-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color 0.2s;
+}
+.my-builds-item:last-child {
+  border-bottom: none;
+}
+.my-builds-item:hover {
+  background-color: var(--modal-alt-bg);
+}
+
+.my-builds-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.my-builds-item-name {
+  font-weight: 500;
+  color: var(--fg);
+}
+.my-builds-item-date,
+.my-builds-item-price {
+  font-size: 0.8rem;
+  color: var(--fg-alt);
+}
+
+.my-builds-item-actions button {
+  background: var(--input-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.my-builds-item-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.my-builds-item-actions button.delete-build-btn-modal:hover {
+  border-color: var(--error-color);
+  color: var(--error-color);
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+#logged-in-view {
+  flex-direction: column;
 }

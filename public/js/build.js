@@ -4,7 +4,18 @@ import {
   translateDynamicElement,
   currentLanguage,
   translatePage,
+  setLanguage, // Ensure setLanguage is exported and imported if used here for initial setup
 } from "./localization.js";
+
+// Helper function to parse JWT token
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (e) {
+    console.error("Failed to parse JWT:", e);
+    return null;
+  }
+}
 
 function getNestedValue(obj, path) {
   if (!obj || typeof path !== "string") return undefined;
@@ -22,6 +33,8 @@ const API = {
   load: (id) => `/api/configs/${id}`,
   update: (id) => `/api/configs/${id}`,
   component: (id) => `/api/components/${id}`,
+  login: "/api/auth/login",
+  register: "/api/auth/register",
 };
 
 let currentBuildId = null;
@@ -42,6 +55,39 @@ const totalTdpSpan = document.getElementById("totalTdp");
 const buildDateSpan = document.getElementById("build-date");
 const buildAuthorSpan = document.getElementById("build-author");
 const partsListSection = document.querySelector(".parts-list");
+
+// Sidebar auth elements
+const loggedOutView = document.getElementById("logged-out-view");
+const loggedInView = document.getElementById("logged-in-view");
+const sidebarUsername = document.getElementById("sidebar-username");
+const signupBtnModal = document.getElementById("signup-btn-modal");
+const loginBtnModal = document.getElementById("login-btn-modal");
+const myBuildsBtn = document.getElementById("my-builds-btn");
+const logoutBtn = document.getElementById("logout-btn");
+
+// Auth Modal Elements
+const loginModalOverlay = document.getElementById("loginModalOverlay");
+const registerModalOverlay = document.getElementById("registerModalOverlay");
+const myBuildsModalOverlay = document.getElementById("myBuildsModalOverlay");
+
+const closeLoginModalBtn = document.getElementById("closeLoginModal");
+const closeRegisterModalBtn = document.getElementById("closeRegisterModal");
+const closeMyBuildsModalBtn = document.getElementById("closeMyBuildsModal");
+
+const loginFormModal = document.getElementById("loginFormModal");
+const registerFormModal = document.getElementById("registerFormModal");
+
+const loginErrorModal = document.getElementById("loginErrorModal");
+const registerErrorModal = document.getElementById("registerErrorModal");
+const myBuildsError = document.getElementById("myBuildsError");
+
+const switchToRegisterModalLink = document.getElementById(
+  "switchToRegisterModal"
+);
+const switchToLoginModalLink = document.getElementById("switchToLoginModal");
+
+const myBuildsListContainer = document.getElementById("myBuildsListContainer");
+const myBuildsLoader = document.getElementById("myBuildsLoader");
 
 const generateDescriptionBtn = document.getElementById(
   "generateDescriptionBtn"
@@ -97,22 +143,13 @@ const productDetailMerchantsContainer = document.getElementById(
 const productDetailSpecsTableBody = document.querySelector(
   "#productDetailSpecs table tbody"
 );
+let currentBuildNumericTotalPrice = 0; // Variable to store the numeric total price
 
-/**
- * Formats complex values (objects/arrays) for display in the specs table.
- * @param {*} value - The value to format.
- * @param {string} baseKeyPath - The full path to the key (e.g., "pcie_slots", "audio.chipset").
- * @returns {string|null} A formatted string representation of the value, or null if the value should be expanded by displaySpecsRecursive.
- */
 function formatComplexValue(value, baseKeyPath) {
   if (value === null || value === undefined) return "";
-
   if (Array.isArray(value)) {
-    if (value.length === 0) return "-"; // Отображаем прочерк для пустых массивов
-
-    // Специальная обработка для массивов объектов
-    const keySuffix = baseKeyPath.split(".").pop().toLowerCase(); // Последняя часть ключа
-
+    if (value.length === 0) return "-";
+    const keySuffix = baseKeyPath.split(".").pop().toLowerCase();
     if (keySuffix.includes("pcie_slots") || keySuffix.includes("pci_e_slots")) {
       return (
         value
@@ -142,17 +179,13 @@ function formatComplexValue(value, baseKeyPath) {
           .join("; ") || "-"
       );
     }
-    // Общая обработка массивов: если элементы - простые типы, соединяем их. Если объекты - возвращаем null для рекурсивной обработки.
     if (value.every((item) => typeof item !== "object" || item === null)) {
       return value.join(", ");
     }
-    return null; // Сигнал для displaySpecsRecursive, что нужно развернуть этот массив объектов
+    return null;
   }
-
   if (typeof value === "object") {
-    // Специальная обработка для конкретных объектов, которые можно представить одной строкой
     const keySuffix = baseKeyPath.split(".").pop().toLowerCase();
-
     if (
       keySuffix === "resolution" &&
       value.horizontalRes &&
@@ -166,25 +199,15 @@ function formatComplexValue(value, baseKeyPath) {
         ethInfo += ` (${value.controller})`;
       return ethInfo;
     }
-    // Для объекта audio, если мы хотим его развернуть, formatComplexValue должен вернуть null
-    // Если хотим одной строкой:
-    // if (keySuffix === 'audio' && value.chipset) {
-    //     let audioInfo = `${getTranslation('spec_key_audio_chipset')}: ${value.chipset}`;
-    //     if (value.channels) audioInfo += `, ${getTranslation('spec_key_audio_channels')}: ${value.channels}`;
-    //     return audioInfo;
-    // }
     if (keySuffix.includes("clocks") && value.base) {
-      // Общая обработка для clocks
       let clockStr = `Base: ${value.base}${value.unit || "GHz"}`;
       if (value.boost)
         clockStr += `, Boost: ${value.boost}${value.unit || "GHz"}`;
       return clockStr;
     }
-
-    // Если нет специального форматирования, возвращаем null, чтобы displaySpecsRecursive обработал его
     return null;
   }
-  return String(value); // Для простых типов
+  return String(value);
 }
 
 export function showProductDetails(product) {
@@ -215,7 +238,6 @@ export function showProductDetails(product) {
     productDetail3DIcon.style.display =
       s.supports3D || product.supports3D ? "inline" : "none";
   }
-
   if (productDetailMainImage) {
     productDetailMainImage.src = primaryImageUrl;
     productDetailMainImage.alt = productName;
@@ -239,7 +261,6 @@ export function showProductDetails(product) {
       imageUrls.push(primaryImageUrl);
     }
     imageUrls = [...new Set(imageUrls)];
-
     imageUrls.forEach((url, index) => {
       if (!url) return;
       const thumb = document.createElement("img");
@@ -270,35 +291,33 @@ export function showProductDetails(product) {
     if (product.prices?.Ekua !== undefined && product.prices?.Ekua !== null) {
       const priceEkua = product.prices.Ekua;
       const urlEkua = product.storeIds?.Ekua;
-
       if (typeof priceEkua === "number") {
         const merchantRow = document.createElement("div");
         merchantRow.className = "merchant-row";
         merchantRow.innerHTML = `
-                <span class="merchant-name">Ek.ua</span>
-                <span class="merchant-availability">${
-                  getTranslation("availability_in_stock") || "In Stock"
-                }</span>
-                <span class="merchant-price">₴${priceEkua
-                  .toFixed(2)
-                  .replace(".", ",")}</span>
-                ${
-                  urlEkua
-                    ? `<a href="${
-                        urlEkua.startsWith("http")
-                          ? urlEkua
-                          : "https://ek.ua/ua/search/?kof=" + urlEkua
-                      }" target="_blank" rel="noopener noreferrer" class="merchant-buy-btn">${getTranslation(
-                        "buy_button_text"
-                      )}</a>`
-                    : ""
-                }
-            `;
+            <span class="merchant-name">Ek.ua</span>
+            <span class="merchant-availability">${
+              getTranslation("availability_in_stock") || "In Stock"
+            }</span>
+            <span class="merchant-price">₴${priceEkua
+              .toFixed(2)
+              .replace(".", ",")}</span>
+            ${
+              urlEkua
+                ? `<a href="${
+                    urlEkua.startsWith("http")
+                      ? urlEkua
+                      : "https://ek.ua/ua/search/?kof=" + urlEkua
+                  }" target="_blank" rel="noopener noreferrer" class="merchant-buy-btn">${getTranslation(
+                    "buy_button_text"
+                  )}</a>`
+                : ""
+            }
+        `;
         productDetailMerchantsContainer.appendChild(merchantRow);
         merchantsRendered = true;
       }
     }
-
     if (!merchantsRendered) {
       productDetailMerchantsContainer.innerHTML = `<p>${
         getTranslation("no_price_data_available") ||
@@ -326,7 +345,6 @@ export function showProductDetails(product) {
       "general_product_information",
       "images",
     ]);
-
     const specOrder = [
       "manufacturer",
       "series",
@@ -379,7 +397,6 @@ export function showProductDetails(product) {
       "sample_rate_khz",
       "protocol",
     ];
-
     const displayedSpecs = new Set();
 
     function addSpecRow(keyText, value, isNestedGroupTitle = false) {
@@ -387,25 +404,22 @@ export function showProductDetails(product) {
         if (typeof value === "string" && value.trim() === "") return;
         if (typeof value !== "string" && !isNestedGroupTitle) return;
       }
-
       const row = productDetailSpecsTableBody.insertRow();
       const cellKey = row.insertCell();
       const cellValue = row.insertCell();
-
       cellKey.textContent = keyText;
-
       if (isNestedGroupTitle) {
         cellKey.colSpan = 2;
         cellKey.style.fontWeight = "bold";
         cellKey.style.paddingTop = "0.5em";
-        if (keyText.includes(".")) cellKey.style.paddingLeft = "1em"; // Отступ для подгрупп
+        if (keyText.includes(".")) cellKey.style.paddingLeft = "1em";
       } else {
         if (typeof value === "boolean") {
           cellValue.textContent = value
             ? getTranslation("yes_filter")
             : getTranslation("no_filter");
         } else {
-          cellValue.textContent = value; // Значение уже отформатировано formatComplexValue
+          cellValue.textContent = value;
         }
       }
     }
@@ -424,20 +438,16 @@ export function showProductDetails(product) {
               .replace(/_/g, " ")
               .replace(/([A-Z])/g, " $1")
               .replace(/^./, (str) => str.toUpperCase());
-
           if (!displayedSpecs.has(currentPath)) {
             const formattedValue = formatComplexValue(
               currentValue,
               currentPath
             );
-
             if (formattedValue === null) {
-              // Объект или массив объектов, который нужно развернуть
-              addSpecRow(displayKeyText, null, true); // Добавляем заголовок группы
+              addSpecRow(displayKeyText, null, true);
               displayedSpecs.add(currentPath);
               displaySpecsRecursive(currentValue, currentPath, indentLevel + 1);
             } else {
-              // Простое значение или отформатированное комплексное значение
               const row = productDetailSpecsTableBody.insertRow();
               const cellKey = row.insertCell();
               const cellValue = row.insertCell();
@@ -451,7 +461,6 @@ export function showProductDetails(product) {
         }
       }
     }
-
     specOrder.forEach((path) => {
       const value = getNestedValue(s, path);
       const firstSegment = path.split(".")[0];
@@ -467,9 +476,7 @@ export function showProductDetails(product) {
             .replace(/_/g, " ")
             .replace(/([A-Z])/g, " $1")
             .replace(/^./, (str) => str.toUpperCase());
-
         if (formattedValue === null) {
-          // Объект для развертывания
           addSpecRow(displayKeyText, null, true);
           displayedSpecs.add(path);
           displaySpecsRecursive(value, path, 1);
@@ -479,14 +486,12 @@ export function showProductDetails(product) {
         }
       }
     });
-
-    displaySpecsRecursive(s); // Отображаем остальные характеристики
+    displaySpecsRecursive(s);
   }
 
   let currentDetailModalAddToBuildButton = document.getElementById(
     "productDetailAddToBuildBtn"
   );
-
   if (currentDetailModalAddToBuildButton) {
     const newBtn = currentDetailModalAddToBuildButton.cloneNode(true);
     const btnTextSpan = newBtn.querySelector("span");
@@ -497,7 +502,6 @@ export function showProductDetails(product) {
         "add_to_build_btn_modal"
       )}`;
     }
-
     if (currentDetailModalAddToBuildButton.parentNode) {
       currentDetailModalAddToBuildButton.parentNode.replaceChild(
         newBtn,
@@ -518,7 +522,6 @@ export function showProductDetails(product) {
         );
       }
     }
-
     productDetailAddToBuildBtn.onclick = () => {
       window.dispatchEvent(
         new CustomEvent("add-component", {
@@ -540,9 +543,6 @@ export function showProductDetails(product) {
     productDetailModalOverlay.style.display = "flex";
   document.body.style.overflow = "hidden";
 }
-
-// --- Остальной код build.js ---
-// ... (Весь остальной код из предыдущей версии build.js, который не был изменен выше) ...
 
 function toggleMainLoader(show) {
   if (mainBuildLoaderOverlay) {
@@ -573,7 +573,6 @@ export function checkCompatibility(parts) {
         .toLowerCase()
     );
   }
-
   let calculatedTotalTdp = 0;
   Object.values(parts).forEach((p) => {
     if (p && p.specs) {
@@ -591,14 +590,12 @@ export function checkCompatibility(parts) {
     }
   });
   calculatedTotalTdp += 50;
-
   if (cpu && motherboard) {
     const cpuSocket = cpu.specs?.socket;
     const mbSocket = motherboard.specs?.socket;
     if (cpuSocket && mbSocket && !eqIgnoreCase(cpuSocket, mbSocket))
       return false;
   }
-
   if (ram && motherboard) {
     const ramType = ram.specs?.ram_type || ram.specs?.type;
     const mbRamType = motherboard.specs?.memory?.ram_type;
@@ -629,7 +626,6 @@ export function checkCompatibility(parts) {
     const mbRamSlots = motherboard.specs?.memory?.slots;
     if (mbRamSlots && ramModules > mbRamSlots) return false;
   }
-
   if (cpuCooler && cpu) {
     const coolerSockets = cpuCooler.specs?.cpu_sockets || [];
     const cpuSocket = cpu.specs?.socket;
@@ -644,7 +640,6 @@ export function checkCompatibility(parts) {
         return false;
     }
   }
-
   if (pcCase && motherboard) {
     const caseFormFactorRaw = pcCase.specs?.form_factor || "";
     const mbFormFactor = motherboard.specs?.form_factor;
@@ -670,7 +665,6 @@ export function checkCompatibility(parts) {
     )
       return false;
   }
-
   if (psu) {
     const psuWattage = psu.specs?.wattage || psu.specs?.wattage_w;
     if (psuWattage && calculatedTotalTdp && psuWattage < calculatedTotalTdp)
@@ -714,9 +708,10 @@ function updateTotal() {
     return sum + (typeof price === "number" ? price : 0);
   }, 0);
 
+  currentBuildNumericTotalPrice = sumPrice; // Store the numeric total price
+
   if (totalPriceSpan)
     totalPriceSpan.textContent = sumPrice.toFixed(2).replace(".", ",");
-
   let calculatedTotalTdp = 0;
   Object.values(selectedParts).forEach((p) => {
     if (p && p.specs) {
@@ -735,7 +730,6 @@ function updateTotal() {
   });
   calculatedTotalTdp += 50;
   if (totalTdpSpan) totalTdpSpan.textContent = calculatedTotalTdp;
-
   const compatible = checkCompatibility(selectedParts);
   if (compatibilitySpan && compicon) {
     if (compatible) {
@@ -743,9 +737,9 @@ function updateTotal() {
         compatibilitySpan,
         "compatibility_status_compatible"
       );
-      compatibilitySpan.style.color = "var(--success)";
+      compatibilitySpan.style.color = "#3b82f5";
       compicon.className = "fa fa-check-circle";
-      compicon.style.color = "var(--success)";
+      compicon.style.color = "#3b82f5";
       if (compatibilityAdvisorTriggerSection)
         compatibilityAdvisorTriggerSection.style.display = "none";
     } else {
@@ -760,7 +754,6 @@ function updateTotal() {
         compatibilityAdvisorTriggerSection.style.display = "block";
     }
   }
-
   const currentBuildNameDisplay = document.getElementById("current-build-name");
   const currentBuildPriceDisplay = document.getElementById(
     "current-build-price"
@@ -806,20 +799,16 @@ function renderPart(category, product) {
     `.part-category[data-cat="${category}"]`
   );
   if (!container) return;
-
   container.querySelectorAll(".selected-part").forEach((el) => el.remove());
-
   const addBtn = container.querySelector(".add-btn");
   if (addBtn) {
     addBtn.textContent = getTranslation("swap_btn_text");
     addBtn.classList.add("swap-btn");
   }
-
   const title = getProductDisplayTitle(product.specs);
   const imgUrl = getBuildImage(product);
   const price = product.prices?.Ekua ?? 0;
   const buyLink = getBuyLink(product);
-
   const partDiv = document.createElement("div");
   partDiv.className = "selected-part";
   partDiv.dataset.productId = product.opendb_id;
@@ -834,9 +823,9 @@ function renderPart(category, product) {
         <div class="sp-actions">
           ${
             buyLink
-              ? `<a href="${buyLink}" target="_blank" rel="noopener noreferrer" class="sp-buy">${
-                  getTranslation("buy_button_text") || "Купити"
-                }</a>`
+              ? `<a href="${buyLink}" target="_blank" rel="noopener noreferrer" class="sp-buy">${getTranslation(
+                  "buy_button_text"
+                )}</a>`
               : `<span class="sp-buy-na" style="font-size: 0.8em; color: #999;">N/A</span>`
           }
           <button class="sp-remove" title="${
@@ -856,7 +845,6 @@ if (partsListSection) {
     const isRemoveButton = e.target.closest(".sp-remove");
     const isBuyButton = e.target.closest(".sp-buy");
     const isAddButton = e.target.closest(".add-btn");
-
     if (
       selectedPartElement &&
       !isRemoveButton &&
@@ -885,9 +873,10 @@ if (partsListSection) {
       const addBtn = catElement.querySelector(".add-btn");
       if (addBtn) {
         const categoryTitleElement = catElement.querySelector("h3");
-        const categoryKey = categoryTitleElement
-          ? categoryTitleElement.dataset.translateCategory || cat
-          : cat;
+        const categoryKey =
+          categoryTitleElement?.dataset.translateCategory ||
+          catElement?.dataset.cat ||
+          "Part";
         const categoryName = getTranslation(categoryKey);
         addBtn.textContent = `${getTranslation(
           "add_btn_prefix"
@@ -913,15 +902,16 @@ function getCurrentPartsData() {
     .filter((id) => id);
 }
 
-async function loadBuildList() {
+async function loadBuildList(selectBuildId = null) {
+  // Added parameter to optionally select a build
+  if (!buildSelector) return; // Exit if buildSelector is not on the page
   toggleMainLoader(true);
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      if (buildSelector)
-        buildSelector.innerHTML = `<option value="">${
-          getTranslation("please_login_to_see_builds") || "Спочатку увійдіть"
-        }</option>`;
+      buildSelector.innerHTML = `<option value="">${getTranslation(
+        "please_login_to_see_builds"
+      )}</option>`;
       return;
     }
     const res = await fetch(API.list, {
@@ -929,34 +919,44 @@ async function loadBuildList() {
     });
     if (!res.ok)
       throw new Error(
-        `${
-          getTranslation("error_loading_build_list_status") ||
-          "Не вдалося завантажити список збірок"
-        }: ${res.status}`
+        `${getTranslation("error_loading_build_list_status")}: ${res.status}`
       );
     const list = await res.json();
-    if (buildSelector) {
+
+    if (list.length === 0) {
+      buildSelector.innerHTML = `<option value="">${getTranslation(
+        "no_builds_found"
+      )}</option>`;
+    } else {
       buildSelector.innerHTML = list
         .map((b) => `<option value="${b._id}">${b.name}</option>`)
         .join("");
-      if (list.length === 0) {
-        buildSelector.innerHTML = `<option value="">${
-          getTranslation("no_builds_found") || "Збірок не знайдено"
-        }</option>`;
+      if (
+        selectBuildId &&
+        buildSelector.querySelector(`option[value="${selectBuildId}"]`)
+      ) {
+        buildSelector.value = selectBuildId; // Select the specified build
+      } else if (buildSelector.options.length > 0) {
+        // buildSelector.value = buildSelector.options[0].value; // Default to first if no specific selection
       }
     }
   } catch (error) {
-    console.error("Помилка завантаження списку збірок:", error);
-    if (buildSelector)
-      buildSelector.innerHTML = `<option value="">${
-        getTranslation("error_loading_build_list") || "Помилка завантаження"
-      }</option>`;
+    console.error(getTranslation("error_loading_build_list"), error);
+    buildSelector.innerHTML = `<option value="">${getTranslation(
+      "error_loading_build_list"
+    )}</option>`;
   } finally {
     toggleMainLoader(false);
   }
 }
 
 async function loadBuild(id) {
+  const token = localStorage.getItem("token");
+  const currentUser = token ? parseJwt(token) : null;
+  const currentUsername = currentUser
+    ? currentUser.username
+    : getTranslation("anonymous_author");
+
   if (!id) {
     Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
     document.querySelectorAll(".selected-part").forEach((el) => el.remove());
@@ -971,35 +971,34 @@ async function loadBuild(id) {
       btn.classList.remove("swap-btn");
     });
     if (buildNameElement)
-      buildNameElement.textContent =
-        getTranslation("new_build_default_name") || "Нова збірка";
+      buildNameElement.textContent = getTranslation("new_build_default_name");
     if (buildDateSpan)
       buildDateSpan.textContent = new Date().toLocaleDateString(
         currentLanguage === "uk" ? "uk-UA" : "en-US",
         { month: "short", day: "numeric", year: "numeric" }
       );
-    if (buildAuthorSpan)
+    if (buildAuthorSpan) {
       buildAuthorSpan.textContent =
-        getTranslation("you_author_placeholder") || "Ви";
-    updateTotal();
+        currentUsername || getTranslation("you_author_placeholder");
+    }
+    updateTotal(); // This will also update currentBuildNumericTotalPrice to 0
     if (geminiResponseModalOutput) geminiResponseModalOutput.value = "";
+    currentBuildId = null;
+    if (buildSelector) buildSelector.value = ""; // Clear selection in dropdown for new build
     return;
   }
+
   toggleMainLoader(true);
   if (geminiResponseModalOutput) geminiResponseModalOutput.value = "";
 
   try {
-    const token = localStorage.getItem("token");
     if (!token) return;
     const res = await fetch(API.load(id), {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok)
       throw new Error(
-        `${
-          getTranslation("error_loading_build_status") ||
-          "Не вдалося завантажити збірку"
-        }: ${res.status}`
+        `${getTranslation("error_loading_build_status")}: ${res.status}`
       );
     const cfg = await res.json();
 
@@ -1013,9 +1012,11 @@ async function loadBuild(id) {
         day: "numeric",
         year: "numeric",
       });
-    if (buildAuthorSpan)
+    if (buildAuthorSpan) {
       buildAuthorSpan.textContent =
         cfg.authorName || getTranslation("anonymous_author");
+    }
+    if (buildSelector) buildSelector.value = cfg._id; // Ensure dropdown reflects loaded build
 
     Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
     document.querySelectorAll(".selected-part").forEach((el) => el.remove());
@@ -1037,10 +1038,9 @@ async function loadBuild(id) {
         }).then((r) => {
           if (!r.ok) {
             console.error(
-              `${
-                getTranslation("error_loading_component_status") ||
-                "Не вдалося завантажити компонент"
-              } ${cid}: ${r.status}`
+              `${getTranslation("error_loading_component_status")} ${cid}: ${
+                r.status
+              }`
             );
             return null;
           }
@@ -1053,9 +1053,9 @@ async function loadBuild(id) {
         else console.warn("Отримано недійсний або неповний компонент:", p);
       });
     }
-    updateTotal();
+    updateTotal(); // This will also update currentBuildNumericTotalPrice based on loaded parts
   } catch (error) {
-    console.error("Помилка завантаження збірки:", error);
+    console.error(getTranslation("error_loading_build_status"), error);
   } finally {
     toggleMainLoader(false);
   }
@@ -1063,13 +1063,13 @@ async function loadBuild(id) {
 
 if (newBuildBtn) {
   newBuildBtn.addEventListener("click", async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showLoginModal(); // Show login modal if not logged in
+      return;
+    }
     toggleMainLoader(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert(getTranslation("alert_login_to_create_build"));
-        return;
-      }
       const defaultBuildName = `${
         getTranslation("new_build_default_name_prefix") || "Нова збірка"
       } ${new Date().toLocaleTimeString(
@@ -1082,23 +1082,21 @@ if (newBuildBtn) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: defaultBuildName, components: [] }),
+        body: JSON.stringify({
+          name: defaultBuildName,
+          components: [],
+          totalPrice: 0,
+        }), // Explicitly set totalPrice to 0
       });
       if (!res.ok)
         throw new Error(
-          `${
-            getTranslation("error_creating_build_status") ||
-            "Не вдалося створити нову збірку"
-          }: ${res.status}`
+          `${getTranslation("error_creating_build_status")}: ${res.status}`
         );
       const b = await res.json();
-
-      await loadBuildList();
-      if (buildSelector) buildSelector.value = b._id;
+      await loadBuildList(b._id); // Pass new build ID to select it
       await loadBuild(b._id);
-      currentBuildId = b._id;
     } catch (error) {
-      console.error("Помилка створення нової збірки:", error);
+      console.error(getTranslation("error_creating_build_status"), error);
       alert(getTranslation("alert_error_creating_build"));
     } finally {
       toggleMainLoader(false);
@@ -1131,13 +1129,15 @@ if (buildNameElement) {
       document.getElementById("current-build-name");
     if (currentBuildNameDisplay) currentBuildNameDisplay.textContent = newName;
     try {
+      // When name is updated, we might also want to save the current totalPrice
+      // However, the primary trigger for totalPrice update is component change via "buildUpdated"
       await fetch(API.update(currentBuildId), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newName }),
+        body: JSON.stringify({ name: newName }), // Only send name if only name changed
       });
     } catch (error) {
       console.error("Помилка оновлення назви збірки:", error);
@@ -1153,8 +1153,10 @@ window.addEventListener("buildUpdated", async () => {
     isSaving = false;
     return;
   }
-
-  const buildDataToSave = { components: getCurrentPartsData() };
+  const buildDataToSave = {
+    components: getCurrentPartsData(),
+    totalPrice: currentBuildNumericTotalPrice, // Send the numeric total price
+  };
   try {
     await fetch(API.update(currentBuildId), {
       method: "PUT",
@@ -1194,34 +1196,28 @@ async function showGeminiResponseInModal(
   if (geminiResponseModalOutput.tagName === "TEXTAREA") {
     geminiResponseModalOutput.style.display = "block";
   }
-
   translateDynamicElement(geminiResponseModalTitle, modalTitleKey);
   const loaderTextElement = geminiResponseLoader.querySelector("p");
   if (loaderTextElement)
     translateDynamicElement(loaderTextElement, "processing_request");
-
   geminiResponseModalOutput.value = "";
   geminiResponseLoader.style.display = "flex";
   geminiResponseModalOverlay.style.display = "flex";
   document.body.style.overflow = "hidden";
-
   if (triggerButtonElement) triggerButtonElement.disabled = true;
-
   try {
     const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-    const apiKey = "AIzaSyAAtZYb30LUDpGEQ4JcF_9oEejBbnXN4g8";
+    const apiKey = "AIzaSyAAtZYb30LUDpGEQ4JcF_9oEejBbnXN4g8"; // Replace with your actual API key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        `${getTranslation("api_error_prefix") || "Помилка API"}: ${
+        `${getTranslation("api_error_prefix")}: ${
           errorData.error?.message || response.status
         }`
       );
@@ -1237,11 +1233,9 @@ async function showGeminiResponseInModal(
     }
   } catch (error) {
     console.error("Помилка при взаємодії з Gemini API:", error);
-    geminiResponseModalOutput.value = `${
-      getTranslation("error_prefix") || "Помилка"
-    }: ${error.message}. ${
-      getTranslation("check_console_details") || "Перевірте консоль."
-    }`;
+    geminiResponseModalOutput.value = `${getTranslation("error_prefix")}: ${
+      error.message
+    }. ${getTranslation("check_console_details")}`;
   } finally {
     if (geminiResponseLoader) geminiResponseLoader.style.display = "none";
     if (triggerButtonElement) triggerButtonElement.disabled = false;
@@ -1312,14 +1306,12 @@ async function handleGenerateDescription() {
       )}`;
     })
     .join("\n- ");
-
   const promptTextMain = getTranslation(
     currentLanguage === "uk"
       ? "prompt_generate_description_uk_template"
       : "prompt_generate_description_en_template"
   );
   const prompt = promptTextMain.replace("{partDetails}", partDetails);
-
   await showGeminiResponseInModal(
     "gemini_modal_title_description",
     prompt,
@@ -1434,21 +1426,361 @@ async function handleEstimatePerformance() {
   );
 }
 
-if (generateDescriptionBtn) {
-  generateDescriptionBtn.addEventListener("click", handleGenerateDescription);
+// --- Auth Modal Logic ---
+function showLoginModal() {
+  if (loginModalOverlay) loginModalOverlay.style.display = "flex";
+  if (registerModalOverlay) registerModalOverlay.style.display = "none";
+  if (loginErrorModal) loginErrorModal.textContent = "";
+  document.body.style.overflow = "hidden";
 }
-if (getCompatibilityAdviceBtn) {
+function closeLoginModal() {
+  if (loginModalOverlay) loginModalOverlay.style.display = "none";
+  document.body.style.overflow = "";
+}
+function showRegisterModal() {
+  if (registerModalOverlay) registerModalOverlay.style.display = "flex";
+  if (loginModalOverlay) loginModalOverlay.style.display = "none";
+  if (registerErrorModal) registerErrorModal.textContent = "";
+  document.body.style.overflow = "hidden";
+}
+function closeRegisterModal() {
+  if (registerModalOverlay) registerModalOverlay.style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function updateAuthUI() {
+  const token = localStorage.getItem("token");
+  const currentUser = token ? parseJwt(token) : null;
+
+  if (currentUser) {
+    if (loggedOutView) loggedOutView.style.display = "none";
+    if (loggedInView) loggedInView.style.display = "flex";
+    if (sidebarUsername)
+      sidebarUsername.textContent = currentUser.username || "User";
+    if (newBuildBtn) newBuildBtn.disabled = false;
+    if (buildSelector) buildSelector.disabled = false;
+    if (buildNameElement) buildNameElement.contentEditable = "true";
+    document
+      .querySelectorAll(".part-category .add-btn")
+      .forEach((btn) => (btn.disabled = false));
+    if (generateDescriptionBtn) generateDescriptionBtn.disabled = false;
+    if (getCompatibilityAdviceBtn) getCompatibilityAdviceBtn.disabled = false;
+    if (estimatePerformanceBtn) estimatePerformanceBtn.disabled = false;
+  } else {
+    if (loggedOutView) loggedOutView.style.display = "flex";
+    if (loggedInView) loggedInView.style.display = "none";
+    if (newBuildBtn) newBuildBtn.disabled = true;
+    if (buildSelector) {
+      buildSelector.disabled = true;
+      buildSelector.innerHTML = `<option value="">${getTranslation(
+        "login_to_start"
+      )}</option>`;
+    }
+    if (buildNameElement) {
+      buildNameElement.textContent = getTranslation("login_to_start");
+      buildNameElement.contentEditable = "false";
+    }
+    document
+      .querySelectorAll(".part-category .add-btn")
+      .forEach((btn) => (btn.disabled = true));
+    if (generateDescriptionBtn) generateDescriptionBtn.disabled = true;
+    if (getCompatibilityAdviceBtn) getCompatibilityAdviceBtn.disabled = true;
+    if (estimatePerformanceBtn) estimatePerformanceBtn.disabled = true;
+
+    // Clear build specific info for logged out state
+    if (totalPriceSpan) totalPriceSpan.textContent = "0";
+    if (compatibilitySpan)
+      translateDynamicElement(
+        compatibilitySpan,
+        "compatibility_status_unknown"
+      );
+    if (compicon) compicon.className = "fa fa-question-circle";
+    if (totalTdpSpan) totalTdpSpan.textContent = "0";
+    if (buildDateSpan) buildDateSpan.textContent = "—";
+    if (buildAuthorSpan) buildAuthorSpan.textContent = "—";
+    Object.keys(selectedParts).forEach((cat) => delete selectedParts[cat]);
+    document.querySelectorAll(".selected-part").forEach((el) => el.remove());
+    document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
+      const catElement = btn.closest(".part-category");
+      const categoryKey =
+        catElement?.querySelector("h3")?.dataset.translateCategory ||
+        catElement?.dataset.cat ||
+        "Part";
+      const categoryName = getTranslation(categoryKey);
+      btn.textContent = `${getTranslation("add_btn_prefix")}${categoryName}`;
+      btn.classList.remove("swap-btn");
+    });
+    currentBuildId = null;
+  }
+}
+
+if (loginBtnModal) loginBtnModal.addEventListener("click", showLoginModal);
+if (signupBtnModal) signupBtnModal.addEventListener("click", showRegisterModal);
+if (closeLoginModalBtn)
+  closeLoginModalBtn.addEventListener("click", closeLoginModal);
+if (loginModalOverlay)
+  loginModalOverlay.addEventListener("click", (e) => {
+    if (e.target === loginModalOverlay) closeLoginModal();
+  });
+if (closeRegisterModalBtn)
+  closeRegisterModalBtn.addEventListener("click", closeRegisterModal);
+if (registerModalOverlay)
+  registerModalOverlay.addEventListener("click", (e) => {
+    if (e.target === registerModalOverlay) closeRegisterModal();
+  });
+
+if (switchToRegisterModalLink)
+  switchToRegisterModalLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    showRegisterModal();
+  });
+if (switchToLoginModalLink)
+  switchToLoginModalLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    showLoginModal();
+  });
+
+if (loginFormModal) {
+  loginFormModal.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = loginFormModal.loginEmail.value;
+    const password = loginFormModal.loginPassword.value;
+    if (loginErrorModal) loginErrorModal.textContent = "";
+
+    try {
+      const res = await fetch(API.login, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+        updateAuthUI();
+        closeLoginModal();
+        await loadBuildList(); // Reload build list
+        // Attempt to load the first build or create a new one if list is empty
+        if (
+          buildSelector &&
+          buildSelector.options.length > 0 &&
+          buildSelector.options[0].value
+        ) {
+          await loadBuild(buildSelector.options[0].value);
+        } else if (newBuildBtn) {
+          newBuildBtn.click(); // Create and load a new build
+        }
+      } else {
+        if (loginErrorModal)
+          loginErrorModal.textContent =
+            data.message || getTranslation("error_login_failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      if (loginErrorModal)
+        loginErrorModal.textContent = getTranslation("error_login_failed");
+    }
+  });
+}
+
+if (registerFormModal) {
+  registerFormModal.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = registerFormModal.registerUsername.value;
+    const email = registerFormModal.registerEmail.value;
+    const password = registerFormModal.registerPassword.value;
+    if (registerErrorModal) registerErrorModal.textContent = "";
+
+    try {
+      const res = await fetch(API.register, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.userId) {
+        alert(getTranslation("registration_successful"));
+        showLoginModal(); // Switch to login modal after successful registration
+      } else {
+        if (registerErrorModal)
+          registerErrorModal.textContent =
+            data.message || getTranslation("error_registration_failed");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      if (registerErrorModal)
+        registerErrorModal.textContent = getTranslation(
+          "error_registration_failed"
+        );
+    }
+  });
+}
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    updateAuthUI();
+    // Optionally, clear the current build or redirect
+    loadBuild(null); // Load an empty/new build state
+  });
+}
+
+// My Builds Modal Logic
+async function showMyBuildsModal() {
+  if (
+    !myBuildsModalOverlay ||
+    !myBuildsListContainer ||
+    !myBuildsLoader ||
+    !myBuildsError
+  )
+    return;
+  myBuildsModalOverlay.style.display = "flex";
+  myBuildsListContainer.innerHTML = "";
+  myBuildsError.textContent = "";
+  myBuildsLoader.style.display = "flex";
+  translateDynamicElement(
+    myBuildsLoader.querySelector("p"),
+    "loading_my_builds"
+  );
+  document.body.style.overflow = "hidden";
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      myBuildsError.textContent = getTranslation("please_login_to_see_builds");
+      return;
+    }
+    const res = await fetch(API.list, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok)
+      throw new Error(
+        `${getTranslation("error_loading_build_list_status")}: ${res.status}`
+      );
+    const builds = await res.json();
+
+    if (builds.length === 0) {
+      myBuildsListContainer.innerHTML = `<p style="text-align:center; color: var(--fg-alt);">${getTranslation(
+        "no_builds_to_display"
+      )}</p>`;
+    } else {
+      builds.forEach((build) => {
+        const item = document.createElement("div");
+        item.className = "my-builds-item";
+        item.innerHTML = `
+                    <div class="my-builds-item-info">
+                        <span class="my-builds-item-name">${
+                          build.name ||
+                          getTranslation("unnamed_build_placeholder")
+                        }</span>
+                        <span class="my-builds-item-date">${getTranslation(
+                          "created_at_text"
+                        )}: ${new Date(build.createdAt).toLocaleDateString(
+          currentLanguage === "uk" ? "uk-UA" : "en-US"
+        )}</span>
+                        <span class="my-builds-item-price">₴ ${Number(
+                          build.totalPrice || 0
+                        )
+                          .toFixed(2)
+                          .replace(".", ",")}</span>
+                    </div>
+                    <div class="my-builds-item-actions">
+                        <button class="load-build-btn-modal" data-id="${
+                          build._id
+                        }">${getTranslation("load_build_btn_modal")}</button>
+                        <button class="delete-build-btn-modal" data-id="${
+                          build._id
+                        }" data-name="${
+          build.name || getTranslation("unnamed_build_placeholder")
+        }">${getTranslation("delete_build_btn_modal")}</button>
+                    </div>
+                `;
+        myBuildsListContainer.appendChild(item);
+      });
+    }
+  } catch (error) {
+    console.error(getTranslation("error_loading_build_list"), error);
+    myBuildsError.textContent = getTranslation("error_loading_build_list");
+  } finally {
+    if (myBuildsLoader) myBuildsLoader.style.display = "none";
+  }
+}
+
+if (myBuildsBtn) myBuildsBtn.addEventListener("click", showMyBuildsModal);
+if (closeMyBuildsModalBtn)
+  closeMyBuildsModalBtn.addEventListener("click", () => {
+    if (myBuildsModalOverlay) myBuildsModalOverlay.style.display = "none";
+    document.body.style.overflow = "";
+  });
+if (myBuildsModalOverlay)
+  myBuildsModalOverlay.addEventListener("click", (e) => {
+    if (e.target === myBuildsModalOverlay) {
+      myBuildsModalOverlay.style.display = "none";
+      document.body.style.overflow = "";
+    }
+  });
+
+if (myBuildsListContainer) {
+  myBuildsListContainer.addEventListener("click", async (e) => {
+    const target = e.target;
+    const buildId = target.dataset.id;
+
+    if (target.classList.contains("load-build-btn-modal") && buildId) {
+      await loadBuild(buildId);
+      if (myBuildsModalOverlay) myBuildsModalOverlay.style.display = "none";
+      document.body.style.overflow = "";
+    } else if (target.classList.contains("delete-build-btn-modal") && buildId) {
+      const buildName = target.dataset.name;
+      if (
+        confirm(
+          getTranslation("confirm_delete_build_message", undefined, {
+            buildName,
+          })
+        )
+      ) {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) return;
+          const res = await fetch(API.update(buildId), {
+            // Should be API.delete(buildId)
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) throw new Error(getTranslation("error_deleting_build"));
+          alert(
+            getTranslation("build_deleted_successfully", undefined, {
+              buildName,
+            })
+          );
+          showMyBuildsModal(); // Refresh list
+          await loadBuildList(); // Refresh main dropdown
+          if (currentBuildId === buildId) {
+            // If deleted build was current, load new/empty
+            loadBuild(null);
+          }
+        } catch (error) {
+          console.error(getTranslation("error_deleting_build"), error);
+          alert(getTranslation("error_deleting_build_generic"));
+        }
+      }
+    }
+  });
+}
+
+// Event Listeners for Gemini and other buttons
+if (generateDescriptionBtn)
+  generateDescriptionBtn.addEventListener("click", handleGenerateDescription);
+if (getCompatibilityAdviceBtn)
   getCompatibilityAdviceBtn.addEventListener(
     "click",
     handleGetCompatibilityAdvice
   );
-}
-if (estimatePerformanceBtn) {
+if (estimatePerformanceBtn)
   estimatePerformanceBtn.addEventListener("click", handleEstimatePerformance);
-}
 
-window.addEventListener("languageChanged", () => {
-  translatePage();
+window.addEventListener("languageChanged", async (event) => {
+  await translatePage(); // Ensure page elements are translated first
+  updateAuthUI(); // Then update UI based on auth state, which might re-translate some elements
+
   const mainLoaderText = mainBuildLoaderOverlay?.querySelector("p");
   if (mainLoaderText)
     translateDynamicElement(mainLoaderText, "loading_build_data");
@@ -1462,6 +1794,10 @@ window.addEventListener("languageChanged", () => {
   const geminiModalLoaderText = geminiResponseLoader?.querySelector("p");
   if (geminiModalLoaderText)
     translateDynamicElement(geminiModalLoaderText, "processing_request");
+
+  const myBuildsLoaderText = myBuildsLoader?.querySelector("p");
+  if (myBuildsLoaderText)
+    translateDynamicElement(myBuildsLoaderText, "loading_my_builds");
 
   if (
     compatibilitySpan &&
@@ -1518,49 +1854,42 @@ window.addEventListener("languageChanged", () => {
 });
 
 (async function init() {
-  await loadBuildList();
+  updateAuthUI(); // Initial UI update based on token presence
+  await loadBuildList(); // Load build list for dropdown
+
   const urlParams = new URLSearchParams(window.location.search);
   const configIdFromUrl = urlParams.get("config");
   let initialBuildId = null;
 
-  if (
-    configIdFromUrl &&
-    buildSelector?.querySelector(`option[value="${configIdFromUrl}"]`)
-  ) {
-    initialBuildId = configIdFromUrl;
-    if (buildSelector) buildSelector.value = configIdFromUrl;
-  } else if (
-    buildSelector?.options.length > 0 &&
-    buildSelector.value &&
-    buildSelector.value !== ""
-  ) {
-    initialBuildId = buildSelector.value;
-  }
+  const token = localStorage.getItem("token");
 
-  if (initialBuildId) {
-    await loadBuild(initialBuildId);
-  } else if (localStorage.getItem("token") && newBuildBtn) {
-    newBuildBtn.click();
+  if (token) {
+    // User is logged in
+    if (
+      configIdFromUrl &&
+      buildSelector?.querySelector(`option[value="${configIdFromUrl}"]`)
+    ) {
+      initialBuildId = configIdFromUrl;
+    } else if (
+      buildSelector?.options.length > 0 &&
+      buildSelector.options[0]?.value
+    ) {
+      initialBuildId = buildSelector.options[0].value; // Default to the first build
+    }
+
+    if (initialBuildId) {
+      if (buildSelector) buildSelector.value = initialBuildId;
+      await loadBuild(initialBuildId);
+    } else if (newBuildBtn) {
+      // No specific build, no existing builds, create new
+      newBuildBtn.click();
+    } else {
+      // Fallback if newBuildBtn is not available (should not happen if logged in)
+      loadBuild(null);
+    }
   } else {
-    if (buildNameElement)
-      buildNameElement.textContent = getTranslation("login_to_start");
-    if (totalPriceSpan) totalPriceSpan.textContent = "0";
-    if (compatibilitySpan)
-      translateDynamicElement(
-        compatibilitySpan,
-        "compatibility_status_unknown"
-      );
-    if (compatibilityAdvisorTriggerSection)
-      compatibilityAdvisorTriggerSection.style.display = "none";
-    if (totalTdpSpan) totalTdpSpan.textContent = "0";
-    if (buildDateSpan) buildDateSpan.textContent = "—";
-    if (buildAuthorSpan) buildAuthorSpan.textContent = "—";
-    document
-      .querySelectorAll(".part-category .add-btn")
-      .forEach((btn) => (btn.disabled = true));
-    if (generateDescriptionBtn) generateDescriptionBtn.disabled = true;
-    if (getCompatibilityAdviceBtn) getCompatibilityAdviceBtn.disabled = true;
-    if (estimatePerformanceBtn) estimatePerformanceBtn.disabled = true;
+    // User is not logged in
+    loadBuild(null); // Load empty state, UI will be set by updateAuthUI
   }
-  translatePage();
+  translatePage(); // Ensure all static elements are translated
 })();

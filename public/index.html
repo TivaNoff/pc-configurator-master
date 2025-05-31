@@ -4,18 +4,420 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Конфігуратор ПК</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <title id="pageTitle">Конфігуратор ПК</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <script src="https://kit.fontawesome.com/0ac0840733.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
-    <h1>Ласкаво просимо до конфігуратора ПК</h1>
-    <nav>
-        <a href="login.html">Вхід</a> |
-        <a href="register.html">Реєстрація</a> |
-        <a href="build.html">Конфігуратор</a> |
-        <a href="saved.html">Збережені</a>
-    </nav>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <a href="/" class="logo">
+                    <img src="/img/logo.png" alt="BuildCores Logo" />
+                </a>
+                <div class="sidebar-controls">
+                    <button id="theme-toggle" data-translate="theme_toggle_dark">Dark</button>
+                    <select id="language-switcher">
+                        <option value="uk">УКР</option>
+                        <option value="en">ENG</option>
+                    </select>
+                    <select id="region-select" style="display:none;">
+                        <option value="us">US</option>
+                        <option value="eu">EU</option>
+                    </select>
+                </div>
+            </div>
+            <nav class="nav-primary">
+                <ul>
+                </ul>
+            </nav>
+            <div class="current-build">
+                <h3 data-translate="current_build_title">Current Build</h3>
+                <div class="current-build-info">
+                    <span id="current-build-name">New Build</span>
+                    <span id="current-build-price">₴ 0.00</span>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <div id="logged-out-view">
+                    <button id="signup-btn-modal" class="sidebar-action-btn" data-translate="signup_btn">Sign
+                        Up</button>
+                    <button id="login-btn-modal" class="sidebar-action-btn" data-translate="login_link">Log In</button>
+                </div>
+                <div id="logged-in-view" style="display: none;">
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="sidebar-username">Username</span>
+                    </div>
+                    <button id="my-builds-btn" class="sidebar-action-btn" data-translate="my_builds_btn">My
+                        Builds</button>
+                    <button id="logout-btn" class="sidebar-action-btn" data-translate="logout_btn">Logout</button>
+                </div>
+            </div>
+        </aside>
+        <main class="main">
+            <div class="loader-overlay" id="mainBuildLoaderOverlay" style="display: none;">
+                <div class="loader"></div>
+                <p data-translate="loading_build_data">Завантаження даних збірки...</p>
+            </div>
+
+            <header class="build-header">
+                <div class="build-header-left">
+                    <button id="new-build" data-translate="new_build_btn">+ New Build</button>
+                    <select id="build-selector"></select>
+                </div>
+            </header>
+
+            <section class="parts-list">
+                <div class="build-info">
+                    <div class="build-info-row">
+                        <div class="meta-build-info">
+                            <h1 id="build-name" contenteditable="true" title="Клікніть, щоб змінити назву">
+                                New Build
+                            </h1>
+                            <span><i class="fa fa-solid fa-pencil"></i></span>
+                            <div class="build-meta-text">
+                                <span id="build-date">—</span> • <span id="build-author">—</span>
+                            </div>
+                        </div>
+                        <div class="info-item-wrapper">
+                            <div class="info-item price">
+                                <i class="fa fa-solid fa-money-bill"></i>
+                                <span id="totalPrice">0</span> <span>₴</span>
+                            </div>
+                            <div class="info-item compatible">
+                                <i class="fa fa-check-circle" id="compicon"></i>
+                                <span id="compatibility" data-translate-dynamic="compatibility_status">—</span>
+                            </div>
+                            <div class="info-item tdp">
+                                <i class="fa fa-bolt"></i>
+                                <span id="totalTdp">0</span> W
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gemini-features-container">
+                        <div class="gemini-feature-trigger" id="compatibilityAdvisorTriggerSection"
+                            style="display: none;">
+                            <button id="getCompatibilityAdviceBtn" class="gemini-feature-btn"
+                                data-translate="compatibility_advice_btn">✨ Отримати пораду по сумісності</button>
+                        </div>
+                        <div class="gemini-feature-trigger">
+                            <button id="generateDescriptionBtn" class="gemini-feature-btn"
+                                data-translate="generate_description_btn">✨ Згенерувати опис збірки</button>
+                        </div>
+                        <div class="gemini-feature-trigger">
+                            <button id="estimatePerformanceBtn" class="gemini-feature-btn"
+                                data-translate="estimate_performance_btn">✨ Оцінити продуктивність</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="part-category-titel">
+                    <div class="part-category-wraper-title">
+                        <h3 data-translate="parts_list_title">Parts List</h3>
+                    </div>
+                </div>
+
+                <div class="part-category" data-cat="PCCase">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-box-open part-icon"></i>
+                            <h3 data-translate-category="PCCase">PC Case</h3>
+                        </div><button class="add-btn" data-translate-btn-add="PCCase">+ Add PC Case</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="Motherboard">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-server part-icon"></i>
+                            <h3 data-translate-category="Motherboard">Motherboard</h3>
+                        </div><button class="add-btn" data-translate-btn-add="Motherboard">+ Add Motherboard</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CPU">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-microchip part-icon"></i>
+                            <h3 data-translate-category="CPU">CPU</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CPU">+ Add CPU</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CPUCooler">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-fan part-icon"></i>
+                            <h3 data-translate-category="CPUCooler">CPU Cooler</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CPUCooler">+ Add CPU Cooler</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="GPU">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-image part-icon"></i>
+                            <h3 data-translate-category="GPU">GPU</h3>
+                        </div><button class="add-btn" data-translate-btn-add="GPU">+ Add GPU</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="RAM">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-memory part-icon"></i>
+                            <h3 data-translate-category="RAM">RAM</h3>
+                        </div><button class="add-btn" data-translate-btn-add="RAM">+ Add RAM</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="Storage">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-hdd part-icon"></i>
+                            <h3 data-translate-category="Storage">Storage</h3>
+                        </div><button class="add-btn" data-translate-btn-add="Storage">+ Add Storage</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="PSU">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-plug part-icon"></i>
+                            <h3 data-translate-category="PSU">Power Supply</h3>
+                        </div><button class="add-btn" data-translate-btn-add="PSU">+ Add PSU</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="NetworkCard">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-network-wired part-icon"></i>
+                            <h3 data-translate-category="NetworkCard">Network Card</h3>
+                        </div><button class="add-btn" data-translate-btn-add="NetworkCard">+ Add Network Card</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CaseFan">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-wind part-icon"></i>
+                            <h3 data-translate-category="CaseFan">Case Fan</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CaseFan">+ Add Case Fan</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="Monitor">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-desktop part-icon"></i>
+                            <h3 data-translate-category="Monitor">Monitor</h3>
+                        </div><button class="add-btn" data-translate-btn-add="Monitor">+ Add Monitor</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="SoundCard">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-volume-up part-icon"></i>
+                            <h3 data-translate-category="SoundCard">Sound Card</h3>
+                        </div><button class="add-btn" data-translate-btn-add="SoundCard">+ Add Sound Card</button>
+                    </div>
+                </div>
+                <div class="part-category" data-cat="CaptureCard">
+                    <div class="part-category-wraper">
+                        <div class="part-category-header"><i class="fa fa-solid fa-video part-icon"></i>
+                            <h3 data-translate-category="CaptureCard">Capture Card</h3>
+                        </div><button class="add-btn" data-translate-btn-add="CaptureCard">+ Add Capture Card</button>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <div class="overlay" id="quickAddOverlay">
+        <div class="modal">
+            <div class="loader-container" id="quickAddLoader" style="display: none;">
+                <div class="loader"></div>
+                <p data-translate="loading_components">Завантаження компонентів...</p>
+            </div>
+            <aside class="filter-sidebar">
+                <h4 data-translate="filters_title">Filters</h4>
+                <label>
+                    <input type="checkbox" id="compatibilityOnly" checked />
+                    <span data-translate="filter_compatibility_only">Compatibility Only</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="only3d" />
+                    <span data-translate="filter_3d_only">3D Only</span>
+                </label>
+                <hr />
+                <div>
+                    <h5 data-translate="filter_price">Price</h5>
+                    <div class="price-filter">
+                        <input type="range" id="priceMin" min="0" max="20000" step="100" value="0" />
+                        <input type="range" id="priceMax" min="0" max="20000" step="100" value="20000" />
+                        <div class="price-values">
+                            <span id="priceMinVal">₴0</span>
+                            <span id="priceMaxVal">₴20000</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            <div class="quickadd-content">
+                <div class="quickadd-header">
+                    <div id="productsCount" class="products-count" data-translate-dynamic="products_found"></div>
+                    <div class="qa-controls">
+                        <label for="sortBySelect">
+                            <span data-translate="sort_by">Sort by</span>
+                            <select id="sortBySelect">
+                                <option value="default" data-translate="sort_default">Default</option>
+                                <option value="priceAsc" data-translate="sort_price_asc">Price: low to high</option>
+                                <option value="priceDesc" data-translate="sort_price_desc">Price: high to low</option>
+                            </select>
+                        </label>
+                        <input id="component-search" type="text" data-translate-placeholder="search_by_name_placeholder"
+                            placeholder="Search by name..." />
+                    </div>
+                </div>
+                <section class="products-grid" id="productsGrid"></section>
+                <div class="quickadd-footer">
+                    <div class="rows-per-page">
+                        <span data-translate="rows_per_page">Rows per page</span>
+                        <select id="rowsPerPage">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div id="paginationControls" class="pagination-controls"></div>
+                </div>
+            </div>
+            <button class="modal-close" id="closeQuickAdd">✕</button>
+        </div>
+    </div>
+
+    <div class="overlay modal-overlay gemini-response-modal-overlay" id="geminiResponseModalOverlay"
+        style="display: none;">
+        <div class="modal gemini-response-modal">
+            <button class="modal-close" id="closeGeminiResponseModal">✕</button>
+            <h3 id="geminiResponseModalTitle" data-translate-dynamic="gemini_modal_title">Відповідь від AI</h3>
+            <div class="gemini-response-loader-container" id="geminiResponseLoader" style="display: none;">
+                <div class="loader"></div>
+                <p data-translate="processing_request">Обробка запиту...</p>
+            </div>
+            <textarea id="geminiResponseModalOutput" rows="10" readonly></textarea>
+            <div class="temp-detail-content scrollable-modal-content" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="overlay modal-overlay product-detail-modal-overlay" id="productDetailModalOverlay"
+        style="display: none;">
+        <div class="modal product-detail-modal">
+            <div class="product-detail-header">
+                <h3 id="productDetailModalTitle" data-translate="part_details_title">Part Details</h3>
+                <button class="modal-close" id="closeProductDetailModal">✕</button>
+            </div>
+            <div class="product-detail-content">
+                <div class="product-detail-gallery">
+                    <div class="product-detail-main-image">
+                        <img id="productDetailMainImage" src="/img/placeholder.png" alt="Product Image">
+                    </div>
+                    <div class="product-detail-thumbnails" id="productDetailThumbnails">
+                    </div>
+                </div>
+                <div class="product-detail-info">
+                    <h4 id="productDetailName">Product Name</h4>
+                    <p class="product-detail-category"><span data-translate="category_label">Category</span>: <span
+                            id="productDetailCategoryValue">N/A</span> <span id="productDetail3DIcon"
+                            style="display:none;" title="3D Model Available">🧊</span></p>
+                    <div class="product-detail-main-actions">
+                        <button id="productDetailAddToBuildBtn" class="product-action-btn primary-action-btn"><i
+                                class="fas fa-plus-circle"></i> <span data-translate="add_to_build_btn_modal">Add to
+                                Build</span></button>
+                    </div>
+                    <div class="product-detail-merchants" id="productDetailMerchants">
+                    </div>
+                </div>
+            </div>
+            <div class="product-detail-specs-fullwidth" id="productDetailSpecs">
+                <h5 data-translate="specifications_table_title">Specifications</h5>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-translate="spec_table_header_spec">Specification</th>
+                            <th data-translate="spec_table_header_value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay auth-modal-overlay" id="loginModalOverlay" style="display: none;">
+        <div class="modal auth-modal">
+            <button class="modal-close" id="closeLoginModal">✕</button>
+            <h3 data-translate="login_modal_title">Login</h3>
+            <form id="loginFormModal">
+                <div class="form-group">
+                    <label for="loginEmail" data-translate="email_label">Email:</label>
+                    <input id="loginEmail" type="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword" data-translate="password_label">Password:</label>
+                    <input id="loginPassword" type="password" required>
+                </div>
+                <button type="submit" class="auth-submit-btn" data-translate="login_btn_modal">Login</button>
+                <div id="loginErrorModal" class="error-message"></div>
+                <p class="auth-switch-text">
+                    <span data-translate="no_account_question">Don't have an account?</span>
+                    <a href="#" id="switchToRegisterModal" data-translate="signup_link_modal">Sign Up</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <div class="overlay auth-modal-overlay" id="registerModalOverlay" style="display: none;">
+        <div class="modal auth-modal">
+            <button class="modal-close" id="closeRegisterModal">✕</button>
+            <h3 data-translate="register_modal_title">Sign Up</h3>
+            <form id="registerFormModal">
+                <div class="form-group">
+                    <label for="registerUsername" data-translate="username_label">Username:</label>
+                    <input id="registerUsername" type="text" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail" data-translate="email_label">Email:</label>
+                    <input id="registerEmail" type="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword" data-translate="password_label">Password:</label>
+                    <input id="registerPassword" type="password" required>
+                </div>
+                <button type="submit" class="auth-submit-btn" data-translate="signup_btn_modal">Sign Up</button>
+                <div id="registerErrorModal" class="error-message"></div>
+                <p class="auth-switch-text">
+                    <span data-translate="already_have_account_question">Already have an account?</span>
+                    <a href="#" id="switchToLoginModal" data-translate="login_link_modal">Log In</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <div class="overlay my-builds-modal-overlay" id="myBuildsModalOverlay" style="display: none;">
+        <div class="modal my-builds-modal">
+            <button class="modal-close" id="closeMyBuildsModal">✕</button>
+            <h3 data-translate="my_builds_modal_title">My Builds</h3>
+            <div class="loader-container" id="myBuildsLoader" style="display: none;">
+                <div class="loader"></div>
+                <p data-translate="loading_my_builds">Loading your builds...</p>
+            </div>
+            <div id="myBuildsListContainer">
+            </div>
+            <div id="myBuildsError" class="error-message" style="text-align: center;"></div>
+        </div>
+    </div>
+
+
+    <a href="https://www.flaticon.com/free-icons/computer" title="computer icons" style="display:none;">Computer icons
+        created by Pomicon - Flaticon</a>
+
+    <script type="module" src="/js/localization.js"></script>
+    <script type="module" src="/js/theme-toggle.js"></script>
+    <script type="module" src="/js/components.js"></script>
+    <script type="module" src="/js/quickAdd/helpers.js"></script>
+    <script type="module" src="/js/quickAdd/productFlow.js"></script>
+    <script type="module" src="/js/quickAdd/filters.js"></script>
+    <script type="module" src="/js/quickAdd/uiSetup.js"></script>
+    <script type="module" src="/js/quickAdd.js"></script>
+    <script type="module" src="/js/build.js"></script>
 </body>
 
 </html>

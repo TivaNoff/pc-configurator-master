@@ -1,129 +1,169 @@
+// backend/src/controllers/configController.js
 const Config = require("../models/Config");
-const Component = require("../models/Component");
+const Component = require("../models/Component"); // If you need to populate component details
 
-// POST /api/configs
-exports.createConfig = async (req, res) => {
+// Get all configurations for the logged-in user
+exports.getUserConfigs = async (req, res) => {
   try {
-    const userId = req.user.id;
-    // если components не передан — считаем как пустой массив
-    const { name, components = [] } = req.body;
-
-    // только проверяем, что это массив (пустой — ОК)
-    if (!Array.isArray(components)) {
-      return res.status(400).json({ message: "Components array required" });
-    }
-
-    // считаем totalPrice (если components пуст — вернёт 0)
-    const comps = components.length
-      ? await Component.find({ opendb_id: { $in: components } })
-      : [];
-    const totalPrice = comps.reduce((sum, c) => {
-      const vals = Object.values(c.prices || {}).filter(
-        (v) => typeof v === "number"
+    // Ensure req.user is populated and has an id
+    if (!req.user || !req.user.id) {
+      console.error(
+        "User not authenticated or user.id is missing in getUserConfigs"
       );
-      return sum + (vals.length ? Math.min(...vals) : 0);
-    }, 0);
-
-    const newConfig = new Config({
-      user: userId,
-      name: name || "Моя збірка",
-      components,
-      totalPrice,
-    });
-
-    const saved = await newConfig.save();
-    return res.status(201).json(saved);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-
-// GET /api/configs
-exports.getConfigs = async (req, res) => {
-  try {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+    // Corrected: Query by the 'user' field as defined in the Config schema
     const configs = await Config.find({ user: req.user.id }).sort({
-      createdAt: -1,
+      updatedAt: -1,
     });
-    return res.json(configs);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error" });
+    res.json(configs);
+  } catch (error) {
+    console.error("Error fetching user configs:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching configurations", error: error.message });
   }
 };
 
-// GET /api/configs/:id
+// Get a specific configuration by ID
 exports.getConfigById = async (req, res) => {
   try {
-    const cfg = await Config.findOne({
+    // Ensure req.user is populated and has an id
+    if (!req.user || !req.user.id) {
+      console.error(
+        "User not authenticated or user.id is missing in getConfigById"
+      );
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+    const config = await Config.findOne({
       _id: req.params.id,
-      user: req.user.id,
+      user: req.user.id, // Corrected: find by 'user' field
+    }).populate("components");
+
+    if (!config) {
+      return res.status(404).json({ message: "Configuration not found" });
+    }
+    res.json(config);
+  } catch (error) {
+    console.error("Error fetching config by ID:", error);
+    if (error.kind === "ObjectId") {
+      return res
+        .status(400)
+        .json({ message: "Invalid configuration ID format" });
+    }
+    res.status(500).json({
+      message: "Error fetching configuration details",
+      error: error.message,
     });
-    if (!cfg) return res.status(404).json({ message: "Not found" });
-    return res.json(cfg);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error" });
   }
 };
 
-// PUT /api/configs/:id
-exports.updateConfig = async (req, res) => {
+// Create a new configuration
+exports.createConfig = async (req, res) => {
+  const { name, components, totalPrice, compatibilityIssues } = req.body;
   try {
-    const userId = req.user.id;
-    const cfgId = req.params.id;
-    const { name, components } = req.body;
-
-    // если пришёл components, то он должен быть массивом
-    if (components !== undefined && !Array.isArray(components)) {
-      return res.status(400).json({ message: "Components must be array" });
+    // Ensure req.user is populated by authMiddleware and has id & username
+    if (!req.user || !req.user.id) {
+      console.error(
+        "User not authenticated or user.id is missing in createConfig"
+      );
+      return res.status(401).json({ message: "User not authenticated" });
     }
 
-    // пересчитаем totalPrice только если передали components
-    let totalPrice;
-    if (Array.isArray(components)) {
-      const comps = components.length
-        ? await Component.find({ opendb_id: { $in: components } })
-        : [];
-      totalPrice = comps.reduce((sum, c) => {
-        const vals = Object.values(c.prices || {}).filter(
-          (v) => typeof v === "number"
-        );
-        return sum + (vals.length ? Math.min(...vals) : 0);
-      }, 0);
+    const newConfig = new Config({
+      user: req.user.id, // Corrected: use 'user' to match the schema
+      authorName: req.user.username,
+      name: name || "Untitled Build",
+      components: components || [],
+      totalPrice: totalPrice || 0,
+      compatibilityIssues: compatibilityIssues || [],
+    });
+    const savedConfig = await newConfig.save();
+    res.status(201).json(savedConfig);
+  } catch (error) {
+    console.error("Error creating config:", error);
+    // Log the validation errors if any for more details
+    if (error.name === "ValidationError") {
+      console.error("Validation Errors:", error.errors);
     }
-
-    // Готовим объект для обновления
-    const update = {};
-    if (name !== undefined) update.name = name;
-    if (components !== undefined) update.components = components;
-    if (totalPrice !== undefined) update.totalPrice = totalPrice;
-
-    const updated = await Config.findOneAndUpdate(
-      { _id: cfgId, user: userId },
-      { $set: update },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: "Not found" });
-    return res.json(updated);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error" });
+    res
+      .status(500)
+      .json({ message: "Error creating configuration", error: error.message });
   }
 };
 
-// DELETE /api/configs/:id
+// Update an existing configuration
+exports.updateConfig = async (req, res) => {
+  const { name, components, totalPrice, compatibilityIssues } = req.body;
+  try {
+    // Ensure req.user is populated and has an id
+    if (!req.user || !req.user.id) {
+      console.error(
+        "User not authenticated or user.id is missing in updateConfig"
+      );
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (components !== undefined) updateData.components = components;
+    if (totalPrice !== undefined) updateData.totalPrice = totalPrice;
+    if (compatibilityIssues !== undefined)
+      updateData.compatibilityIssues = compatibilityIssues;
+
+    const updatedConfig = await Config.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id }, // Corrected: find by 'user' field
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate("components");
+
+    if (!updatedConfig) {
+      return res
+        .status(404)
+        .json({ message: "Configuration not found or user not authorized" });
+    }
+    res.json(updatedConfig);
+  } catch (error) {
+    console.error("Error updating config:", error);
+    if (error.kind === "ObjectId") {
+      return res
+        .status(400)
+        .json({ message: "Invalid configuration ID format" });
+    }
+    res
+      .status(500)
+      .json({ message: "Error updating configuration", error: error.message });
+  }
+};
+
+// Delete a configuration
 exports.deleteConfig = async (req, res) => {
   try {
-    const result = await Config.deleteOne({
+    // Ensure req.user is populated and has an id
+    if (!req.user || !req.user.id) {
+      console.error(
+        "User not authenticated or user.id is missing in deleteConfig"
+      );
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+    const deletedConfig = await Config.findOneAndDelete({
       _id: req.params.id,
-      user: req.user.id,
+      user: req.user.id, // Corrected: find by 'user' field
     });
-    if (!result.deletedCount)
-      return res.status(404).json({ message: "Not found" });
-    return res.json({ message: "Deleted" });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error" });
+    if (!deletedConfig) {
+      return res
+        .status(404)
+        .json({ message: "Configuration not found or user not authorized" });
+    }
+    res.json({ message: "Configuration deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting config:", error);
+    if (error.kind === "ObjectId") {
+      return res
+        .status(400)
+        .json({ message: "Invalid configuration ID format" });
+    }
+    res
+      .status(500)
+      .json({ message: "Error deleting configuration", error: error.message });
   }
 };
