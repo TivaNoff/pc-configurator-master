@@ -32,6 +32,14 @@ export function setupListeners() {
   const searchInput = document.getElementById("component-search");
   const sortBySelect = document.getElementById("sortBySelect");
 
+  // New elements for QuickAdd filter toggle
+  const quickAddFilterToggleButton = document.getElementById(
+    "quickadd-filter-toggle"
+  );
+  const quickAddFilterSidebar = document.getElementById(
+    "quickAddFilterSidebar"
+  );
+
   const debouncedApplyFiltersAndRender = debounce(applyFiltersAndRender, 300);
 
   document.body.addEventListener("click", async (e) => {
@@ -44,6 +52,23 @@ export function setupListeners() {
       document.body.style.overflow = "hidden";
       if (quickAddLoader) quickAddLoader.style.display = "flex";
       if (grid) grid.innerHTML = "";
+
+      // Reset filter sidebar state when opening QuickAdd for a new category
+      if (
+        quickAddFilterSidebar &&
+        quickAddFilterSidebar.classList.contains("filter-sidebar-open")
+      ) {
+        quickAddFilterSidebar.classList.remove("filter-sidebar-open");
+      }
+      if (quickAddFilterToggleButton) {
+        quickAddFilterToggleButton.setAttribute("aria-expanded", "false");
+        // Ensure icon is bars if it was changed to times
+        const icon = quickAddFilterToggleButton.querySelector("i");
+        if (icon && icon.classList.contains("fa-times")) {
+          icon.classList.remove("fa-times");
+          icon.classList.add("fa-filter"); // Or fa-bars if you prefer
+        }
+      }
 
       setFilterCategory(cat);
       setFlowCategory(cat);
@@ -107,6 +132,21 @@ export function setupListeners() {
     closeBtn.addEventListener("click", () => {
       if (overlay) overlay.classList.remove("active");
       document.body.style.overflow = "";
+      // Ensure filter sidebar is closed when QuickAdd is closed
+      if (
+        quickAddFilterSidebar &&
+        quickAddFilterSidebar.classList.contains("filter-sidebar-open")
+      ) {
+        quickAddFilterSidebar.classList.remove("filter-sidebar-open");
+      }
+      if (quickAddFilterToggleButton) {
+        quickAddFilterToggleButton.setAttribute("aria-expanded", "false");
+        const icon = quickAddFilterToggleButton.querySelector("i");
+        if (icon && icon.classList.contains("fa-times")) {
+          icon.classList.remove("fa-times");
+          icon.classList.add("fa-filter");
+        }
+      }
     });
   }
 
@@ -129,23 +169,61 @@ export function setupListeners() {
       if (e.target.matches(".add-to-build")) {
         window.dispatchEvent(
           new CustomEvent("add-component", {
-            // detail: { category: product.category || currentCategory, product }, // currentCategory здесь может быть неактуальным
-            // Лучше передавать категорию из setFlowCategory, если она там доступна, или product.category
             detail: {
               category:
                 product.category ||
                 document.querySelector(
-                  ".part-category.active-category-for-quickadd"
-                )?.dataset.cat,
+                  ".part-category.active-category-for-quickadd" // This selector might not exist or be reliable
+                )?.dataset.cat ||
+                currentCategory, // Fallback to currentCategory from filters.js
               product,
-            }, // Пример
+            },
           })
         );
         window.dispatchEvent(new Event("buildUpdated"));
         if (overlay) overlay.classList.remove("active");
         document.body.style.overflow = "";
+        // Ensure filter sidebar is closed
+        if (
+          quickAddFilterSidebar &&
+          quickAddFilterSidebar.classList.contains("filter-sidebar-open")
+        ) {
+          quickAddFilterSidebar.classList.remove("filter-sidebar-open");
+        }
+        if (quickAddFilterToggleButton) {
+          quickAddFilterToggleButton.setAttribute("aria-expanded", "false");
+          const icon = quickAddFilterToggleButton.querySelector("i");
+          if (icon && icon.classList.contains("fa-times")) {
+            icon.classList.remove("fa-times");
+            icon.classList.add("fa-filter");
+          }
+        }
       } else {
         showProductDetails(product); // Используем импортированную функцию
+      }
+    });
+  }
+
+  // Listener for the QuickAdd filter toggle button
+  if (quickAddFilterToggleButton && quickAddFilterSidebar) {
+    quickAddFilterToggleButton.addEventListener("click", () => {
+      const isOpen = quickAddFilterSidebar.classList.toggle(
+        "filter-sidebar-open"
+      );
+      quickAddFilterToggleButton.setAttribute(
+        "aria-expanded",
+        isOpen.toString()
+      );
+      // Optionally change icon
+      const icon = quickAddFilterToggleButton.querySelector("i");
+      if (icon) {
+        if (isOpen) {
+          icon.classList.remove("fa-filter"); // Or fa-bars
+          icon.classList.add("fa-times");
+        } else {
+          icon.classList.remove("fa-times");
+          icon.classList.add("fa-filter"); // Or fa-bars
+        }
       }
     });
   }

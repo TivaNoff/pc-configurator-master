@@ -2,6 +2,7 @@
 const translations = {
   en: {
     // General UI
+    spec_key_connectors: "Connectors",
     pageTitle: "PC Configurator",
     loading_build_data: "Loading build data...",
     loading_components: "Loading components...",
@@ -419,6 +420,7 @@ const translations = {
     spec_key_pcie_5_0_x4: "PCIe 5.0 x4",
     spec_key_sata_3_0_gb_s: "SATA 3.0 Gb/s",
     spec_key_sata_6_0_gb_s: "SATA 6.0 Gb/s",
+    spec_key_resolution: "Resolution",
     spec_key_resolution_horizontalres: "Horizontal Resolution",
     spec_key_resolution_verticalres: "Vertical Resolution",
     spec_key_pcie_slots_gen: "PCIe Slot Gen",
@@ -509,9 +511,20 @@ const translations = {
     theme_toggle_light: "Light",
     my_builds_btn: "My Builds",
     logout_btn: "Logout",
+    nav_build_link: "Build",
+    welcome_title: "Welcome to BuildCores PC Configurator",
+    welcome_text:
+      "Design your dream PC with ease. Select components, check compatibility, and get an estimated price for your build. Log in or sign up to save your configurations!",
+    start_building_btn: "Start Building",
   },
   uk: {
+    spec_key_resolution: "Роздільна здатність монітора",
     // Sidebar
+    nav_build_link: "Збірка",
+    welcome_title: "Ласкаво просимо до BuildCores PC Configurator",
+    welcome_text:
+      "Спроектуйте ПК своєї мрії з легкістю. Обирайте компоненти, перевіряйте сумісність та отримуйте орієнтовну вартість вашої збірки. Увійдіть або зареєструйтеся, щоб зберігати свої конфігурації!",
+    start_building_btn: "Почати збірку",
     nav_builder: "3D Конструктор",
     nav_products: "Компоненти",
     nav_compare: "Порівняння",
@@ -864,6 +877,7 @@ const translations = {
     spec_key_modular_full: "Повна",
     spec_key_modular_semi: "Часткова",
     spec_key_modular_none: "Відсутня",
+    spec_key_connectors: "Конектори",
     spec_key_connectors_atx_24_pin: "ATX 24-pin",
     spec_key_connectors_eps_8_pin: "EPS 8-pin",
     spec_key_connectors_pcie_12vhpwr: "PCIe 12VHPWR",

@@ -16,7 +16,7 @@
 
 <body>
     <div class="app">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-top">
                 <a href="/" class="logo">
                     <img src="/img/logo.png" alt="BuildCores Logo" />
@@ -35,6 +35,7 @@
             </div>
             <nav class="nav-primary">
                 <ul>
+                    <li><a href="#" id="nav-build-btn" data-translate="nav_build_link">Build</a></li>
                 </ul>
             </nav>
             <div class="current-build">
@@ -61,20 +62,39 @@
                 </div>
             </div>
         </aside>
+
+        <button class="hamburger-menu" id="hamburger-menu" aria-label="Открыть меню" aria-expanded="false">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="mobile-overlay" id="mobile-overlay"></div>
+
         <main class="main">
+            <section id="welcome-section" class="welcome-section">
+                <div class="welcome-content">
+                    <img src="/img/logo.png" alt="BuildCores Logo" class="welcome-logo" />
+                    <h1 data-translate="welcome_title">Welcome to BuildCores PC Configurator</h1>
+                    <p data-translate="welcome_text">Design your dream PC with ease. Select components, check
+                        compatibility, and get an estimated price for your build. Log in or sign up to save your
+                        configurations!</p>
+                    <button id="start-building-btn" class="welcome-start-btn" data-translate="start_building_btn">Start
+                        Building</button>
+                </div>
+            </section>
+
             <div class="loader-overlay" id="mainBuildLoaderOverlay" style="display: none;">
                 <div class="loader"></div>
                 <p data-translate="loading_build_data">Завантаження даних збірки...</p>
             </div>
 
-            <header class="build-header">
+            <header class="build-header" style="display: none;">
                 <div class="build-header-left">
                     <button id="new-build" data-translate="new_build_btn">+ New Build</button>
                     <select id="build-selector"></select>
                 </div>
             </header>
 
-            <section class="parts-list">
+            <section class="parts-list" style="display: none;">
                 <div class="build-info">
                     <div class="build-info-row">
                         <div class="meta-build-info">
@@ -217,68 +237,75 @@
                 </div>
 
             </section>
+
+            <footer class="sitefooter">
+                <p>Made by Vitiuk Ivan</p>
+                <a href="https://github.com/TivaNoff" class="sitefooterling" target="_blank">github</a>
+            </footer>
         </main>
     </div>
 
     <div class="overlay" id="quickAddOverlay">
         <div class="modal">
-            <div class="loader-container" id="quickAddLoader" style="display: none;">
-                <div class="loader"></div>
-                <p data-translate="loading_components">Завантаження компонентів...</p>
+            <button class="modal-close" id="closeQuickAdd">✕</button>
+            <div class="quickadd-header">
+                <button class="quickadd-filter-toggle" id="quickadd-filter-toggle" aria-label="Открыть фильтры"
+                    aria-expanded="false">
+                    <i class="fas fa-filter"></i>
+                </button>
+                <div id="productsCount" class="products-count" data-translate-dynamic="products_found"></div>
+                <div class="qa-controls">
+                    <label for="sortBySelect">
+                        <span data-translate="sort_by">Sort by</span>
+                        <select id="sortBySelect">
+                            <option value="default" data-translate="sort_default">Default</option>
+                            <option value="priceAsc" data-translate="sort_price_asc">Price: low to high</option>
+                            <option value="priceDesc" data-translate="sort_price_desc">Price: high to low</option>
+                        </select>
+                    </label>
+                    <input id="component-search" type="text" data-translate-placeholder="search_by_name_placeholder"
+                        placeholder="Search by name..." />
+                </div>
             </div>
-            <aside class="filter-sidebar">
-                <h4 data-translate="filters_title">Filters</h4>
-                <label>
-                    <input type="checkbox" id="compatibilityOnly" checked />
-                    <span data-translate="filter_compatibility_only">Compatibility Only</span>
-                </label>
-                <label>
-                    <input type="checkbox" id="only3d" />
-                    <span data-translate="filter_3d_only">3D Only</span>
-                </label>
-                <hr />
-                <div>
-                    <h5 data-translate="filter_price">Price</h5>
-                    <div class="price-filter">
-                        <input type="range" id="priceMin" min="0" max="20000" step="100" value="0" />
-                        <input type="range" id="priceMax" min="0" max="20000" step="100" value="20000" />
-                        <div class="price-values">
-                            <span id="priceMinVal">₴0</span>
-                            <span id="priceMaxVal">₴20000</span>
+            <div class="modal-content-wrapper">
+                <aside class="filter-sidebar" id="quickAddFilterSidebar">
+                    <h4 data-translate="filters_title">Filters</h4>
+                    <label>
+                        <input type="checkbox" id="compatibilityOnly" checked />
+                        <span data-translate="filter_compatibility_only">Compatibility Only</span>
+                    </label>
+                    <hr />
+                    <div>
+                        <h5 data-translate="filter_price">Price</h5>
+                        <div class="price-filter">
+                            <input type="range" id="priceMin" min="0" max="20000" step="100" value="0" />
+                            <input type="range" id="priceMax" min="0" max="20000" step="100" value="20000" />
+                            <div class="price-values">
+                                <span id="priceMinVal">₴0</span>
+                                <span id="priceMaxVal">₴20000</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </aside>
-            <div class="quickadd-content">
-                <div class="quickadd-header">
-                    <div id="productsCount" class="products-count" data-translate-dynamic="products_found"></div>
-                    <div class="qa-controls">
-                        <label for="sortBySelect">
-                            <span data-translate="sort_by">Sort by</span>
-                            <select id="sortBySelect">
-                                <option value="default" data-translate="sort_default">Default</option>
-                                <option value="priceAsc" data-translate="sort_price_asc">Price: low to high</option>
-                                <option value="priceDesc" data-translate="sort_price_desc">Price: high to low</option>
+                </aside>
+                <div class="quickadd-content">
+                    <div class="loader-container" id="quickAddLoader" style="display: none;">
+                        <div class="loader"></div>
+                        <p data-translate="loading_components">Завантаження компонентів...</p>
+                    </div>
+                    <section class="products-grid" id="productsGrid"></section>
+                    <div class="quickadd-footer">
+                        <div class="rows-per-page">
+                            <span data-translate="rows_per_page">Rows per page</span>
+                            <select id="rowsPerPage">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
                             </select>
-                        </label>
-                        <input id="component-search" type="text" data-translate-placeholder="search_by_name_placeholder"
-                            placeholder="Search by name..." />
+                        </div>
+                        <div id="paginationControls" class="pagination-controls"></div>
                     </div>
-                </div>
-                <section class="products-grid" id="productsGrid"></section>
-                <div class="quickadd-footer">
-                    <div class="rows-per-page">
-                        <span data-translate="rows_per_page">Rows per page</span>
-                        <select id="rowsPerPage">
-                            <option value="10">10</option>
-                            <option value="20" selected>20</option>
-                            <option value="50">50</option>
-                        </select>
-                    </div>
-                    <div id="paginationControls" class="pagination-controls"></div>
                 </div>
             </div>
-            <button class="modal-close" id="closeQuickAdd">✕</button>
         </div>
     </div>
 
@@ -306,7 +333,8 @@
             <div class="product-detail-content">
                 <div class="product-detail-gallery">
                     <div class="product-detail-main-image">
-                        <img id="productDetailMainImage" src="/img/placeholder.png" alt="Product Image">
+                        <img id="productDetailMainImage" src="/img/placeholder.png" alt="Product Image"
+                            onerror="this.onerror=null; this.src='https://placehold.co/300x280/2a2a2e/eeeeee?text=Image+Not+Found';">
                     </div>
                     <div class="product-detail-thumbnails" id="productDetailThumbnails">
                     </div>
@@ -314,8 +342,7 @@
                 <div class="product-detail-info">
                     <h4 id="productDetailName">Product Name</h4>
                     <p class="product-detail-category"><span data-translate="category_label">Category</span>: <span
-                            id="productDetailCategoryValue">N/A</span> <span id="productDetail3DIcon"
-                            style="display:none;" title="3D Model Available">🧊</span></p>
+                            id="productDetailCategoryValue">N/A</span></p>
                     <div class="product-detail-main-actions">
                         <button id="productDetailAddToBuildBtn" class="product-action-btn primary-action-btn"><i
                                 class="fas fa-plus-circle"></i> <span data-translate="add_to_build_btn_modal">Add to

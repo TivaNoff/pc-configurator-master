@@ -32,6 +32,7 @@ const API = {
   create: "/api/configs",
   load: (id) => `/api/configs/${id}`,
   update: (id) => `/api/configs/${id}`,
+  delete: (id) => `/api/configs/${id}`, // Added for clarity
   component: (id) => `/api/components/${id}`,
   login: "/api/auth/login",
   register: "/api/auth/register",
@@ -54,7 +55,11 @@ const compicon = document.getElementById("compicon");
 const totalTdpSpan = document.getElementById("totalTdp");
 const buildDateSpan = document.getElementById("build-date");
 const buildAuthorSpan = document.getElementById("build-author");
-const partsListSection = document.querySelector(".parts-list");
+
+// --- Sections ---
+const welcomeSection = document.getElementById("welcome-section"); // NEW
+const buildHeader = document.querySelector(".build-header"); // UPDATED selector
+const partsListSection = document.querySelector(".parts-list"); // UPDATED selector
 
 // Sidebar auth elements
 const loggedOutView = document.getElementById("logged-out-view");
@@ -64,6 +69,10 @@ const signupBtnModal = document.getElementById("signup-btn-modal");
 const loginBtnModal = document.getElementById("login-btn-modal");
 const myBuildsBtn = document.getElementById("my-builds-btn");
 const logoutBtn = document.getElementById("logout-btn");
+
+// --- Navigation & Welcome Screen Buttons ---
+const navBuildBtn = document.getElementById("nav-build-btn"); // NEW
+const startBuildingBtn = document.getElementById("start-building-btn"); // NEW
 
 // Auth Modal Elements
 const loginModalOverlay = document.getElementById("loginModalOverlay");
@@ -135,7 +144,6 @@ const productDetailName = document.getElementById("productDetailName");
 const productDetailCategoryElement = document.getElementById(
   "productDetailCategoryValue"
 );
-const productDetail3DIcon = document.getElementById("productDetail3DIcon");
 let productDetailAddToBuildBtn;
 const productDetailMerchantsContainer = document.getElementById(
   "productDetailMerchants"
@@ -143,7 +151,12 @@ const productDetailMerchantsContainer = document.getElementById(
 const productDetailSpecsTableBody = document.querySelector(
   "#productDetailSpecs table tbody"
 );
-let currentBuildNumericTotalPrice = 0; // Variable to store the numeric total price
+let currentBuildNumericTotalPrice = 0;
+
+// Hamburger Menu Elements
+const hamburgerMenuBtn = document.getElementById("hamburger-menu");
+const sidebarElement = document.getElementById("sidebar");
+const mobileOverlayElement = document.getElementById("mobile-overlay");
 
 function formatComplexValue(value, baseKeyPath) {
   if (value === null || value === undefined) return "";
@@ -182,7 +195,7 @@ function formatComplexValue(value, baseKeyPath) {
     if (value.every((item) => typeof item !== "object" || item === null)) {
       return value.join(", ");
     }
-    return null;
+    return null; // Indicates that this array contains objects and should be recursed or handled differently
   }
   if (typeof value === "object") {
     const keySuffix = baseKeyPath.split(".").pop().toLowerCase();
@@ -205,6 +218,7 @@ function formatComplexValue(value, baseKeyPath) {
         clockStr += `, Boost: ${value.boost}${value.unit || "GHz"}`;
       return clockStr;
     }
+    // If it's an object but not one of the special cases, return null to indicate recursion
     return null;
   }
   return String(value);
@@ -234,13 +248,14 @@ export function showProductDetails(product) {
       "N/A";
     productDetailCategoryElement.textContent = categoryText;
   }
-  if (productDetail3DIcon) {
-    productDetail3DIcon.style.display =
-      s.supports3D || product.supports3D ? "inline" : "none";
-  }
   if (productDetailMainImage) {
     productDetailMainImage.src = primaryImageUrl;
     productDetailMainImage.alt = productName;
+    productDetailMainImage.onerror = function () {
+      this.onerror = null;
+      this.src =
+        "https://placehold.co/300x280/2a2a2e/eeeeee?text=Image+Not+Found";
+    };
   }
 
   if (productDetailThumbnailsContainer) {
@@ -260,7 +275,7 @@ export function showProductDetails(product) {
     if (imageUrls.length === 0 && primaryImageUrl) {
       imageUrls.push(primaryImageUrl);
     }
-    imageUrls = [...new Set(imageUrls)];
+    imageUrls = [...new Set(imageUrls)]; // Remove duplicates
     imageUrls.forEach((url, index) => {
       if (!url) return;
       const thumb = document.createElement("img");
@@ -268,6 +283,10 @@ export function showProductDetails(product) {
       thumb.alt = `${
         getTranslation("thumbnail_alt_prefix") || "Thumbnail for"
       } ${productName} ${index + 1}`;
+      thumb.onerror = function () {
+        this.onerror = null;
+        this.style.display = "none"; // Optionally hide broken thumbnails
+      };
       if (url === primaryImageUrl) thumb.classList.add("active");
       thumb.addEventListener("click", () => {
         if (productDetailMainImage) productDetailMainImage.src = url;
@@ -341,7 +360,6 @@ export function showProductDetails(product) {
       "prices",
       "metadata",
       "compatible",
-      "supports3D",
       "general_product_information",
       "images",
     ]);
@@ -412,7 +430,7 @@ export function showProductDetails(product) {
         cellKey.colSpan = 2;
         cellKey.style.fontWeight = "bold";
         cellKey.style.paddingTop = "0.5em";
-        if (keyText.includes(".")) cellKey.style.paddingLeft = "1em";
+        if (keyText.includes(".")) cellKey.style.paddingLeft = "1em"; // Indent nested group titles
       } else {
         if (typeof value === "boolean") {
           cellValue.textContent = value
@@ -443,11 +461,17 @@ export function showProductDetails(product) {
               currentValue,
               currentPath
             );
-            if (formattedValue === null) {
-              addSpecRow(displayKeyText, null, true);
+            if (
+              formattedValue === null &&
+              typeof currentValue === "object" &&
+              !Array.isArray(currentValue)
+            ) {
+              // Check if it's an object to recurse
+              addSpecRow(displayKeyText, null, true); // Pass null for value to indicate group title
               displayedSpecs.add(currentPath);
               displaySpecsRecursive(currentValue, currentPath, indentLevel + 1);
-            } else {
+            } else if (formattedValue !== "" && formattedValue !== null) {
+              // Only add if there's a value
               const row = productDetailSpecsTableBody.insertRow();
               const cellKey = row.insertCell();
               const cellValue = row.insertCell();
@@ -476,28 +500,33 @@ export function showProductDetails(product) {
             .replace(/_/g, " ")
             .replace(/([A-Z])/g, " $1")
             .replace(/^./, (str) => str.toUpperCase());
-        if (formattedValue === null) {
+        if (
+          formattedValue === null &&
+          typeof value === "object" &&
+          !Array.isArray(value)
+        ) {
           addSpecRow(displayKeyText, null, true);
           displayedSpecs.add(path);
           displaySpecsRecursive(value, path, 1);
-        } else if (formattedValue !== "") {
+        } else if (formattedValue !== "" && formattedValue !== null) {
           addSpecRow(displayKeyText, formattedValue);
           displayedSpecs.add(path);
         }
       }
     });
-    displaySpecsRecursive(s);
+    displaySpecsRecursive(s); // Process remaining specs not in specOrder
   }
 
   let currentDetailModalAddToBuildButton = document.getElementById(
     "productDetailAddToBuildBtn"
   );
   if (currentDetailModalAddToBuildButton) {
-    const newBtn = currentDetailModalAddToBuildButton.cloneNode(true);
+    const newBtn = currentDetailModalAddToBuildButton.cloneNode(true); // Clone to remove old listeners
     const btnTextSpan = newBtn.querySelector("span");
     if (btnTextSpan) {
       btnTextSpan.textContent = getTranslation("add_to_build_btn_modal");
     } else {
+      // Fallback if span is not found (e.g., if structure changes)
       newBtn.innerHTML = `<i class="fas fa-plus-circle"></i> ${getTranslation(
         "add_to_build_btn_modal"
       )}`;
@@ -507,13 +536,14 @@ export function showProductDetails(product) {
         newBtn,
         currentDetailModalAddToBuildButton
       );
-      productDetailAddToBuildBtn = newBtn;
+      productDetailAddToBuildBtn = newBtn; // Update the global reference
     } else {
+      // Attempt to find a suitable container if parentNode is null (less ideal)
       const actionsContainer = productDetailModalOverlay?.querySelector(
         ".product-detail-main-actions"
       );
       if (actionsContainer) {
-        actionsContainer.innerHTML = "";
+        actionsContainer.innerHTML = ""; // Clear existing buttons
         actionsContainer.appendChild(newBtn);
         productDetailAddToBuildBtn = newBtn;
       } else {
@@ -589,7 +619,7 @@ export function checkCompatibility(parts) {
       calculatedTotalTdp += tdpVal;
     }
   });
-  calculatedTotalTdp += 50;
+  calculatedTotalTdp += 50; // Base system consumption
   if (cpu && motherboard) {
     const cpuSocket = cpu.specs?.socket;
     const mbSocket = motherboard.specs?.socket;
@@ -685,7 +715,9 @@ export function getProductDisplayTitle(specs) {
 
 function getBuildImage(product) {
   return (
-    product?.storeImg?.Ekua || product?.images?.[0] || "/img/placeholder.png"
+    product?.storeImg?.Ekua ||
+    product?.images?.[0] ||
+    "https://placehold.co/80x56/2a2a2e/eeeeee?text=N/A"
   );
 }
 
@@ -708,7 +740,7 @@ function updateTotal() {
     return sum + (typeof price === "number" ? price : 0);
   }, 0);
 
-  currentBuildNumericTotalPrice = sumPrice; // Store the numeric total price
+  currentBuildNumericTotalPrice = sumPrice;
 
   if (totalPriceSpan)
     totalPriceSpan.textContent = sumPrice.toFixed(2).replace(".", ",");
@@ -728,7 +760,7 @@ function updateTotal() {
       calculatedTotalTdp += tdpVal;
     }
   });
-  calculatedTotalTdp += 50;
+  calculatedTotalTdp += 50; // Base system consumption
   if (totalTdpSpan) totalTdpSpan.textContent = calculatedTotalTdp;
   const compatible = checkCompatibility(selectedParts);
   if (compatibilitySpan && compicon) {
@@ -737,9 +769,9 @@ function updateTotal() {
         compatibilitySpan,
         "compatibility_status_compatible"
       );
-      compatibilitySpan.style.color = "#3b82f5";
+      compatibilitySpan.style.color = "rgba(60, 131, 246)";
       compicon.className = "fa fa-check-circle";
-      compicon.style.color = "#3b82f5";
+      compicon.style.color = "rgba(60, 131, 246)";
       if (compatibilityAdvisorTriggerSection)
         compatibilityAdvisorTriggerSection.style.display = "none";
     } else {
@@ -813,7 +845,7 @@ function renderPart(category, product) {
   partDiv.className = "selected-part";
   partDiv.dataset.productId = product.opendb_id;
   partDiv.innerHTML = `
-    <img src="${imgUrl}" alt="${title}" class="sp-thumb" onerror="this.src='/img/placeholder.png'" />
+    <img src="${imgUrl}" alt="${title}" class="sp-thumb" onerror="this.onerror=null; this.src='https://placehold.co/80x56/2a2a2e/eeeeee?text=N/A';" />
     <div class="sp-info">
       <div class="sp-title multiline-truncate-part">${title}</div>
       <div class="sp-buy-sec">
@@ -903,8 +935,7 @@ function getCurrentPartsData() {
 }
 
 async function loadBuildList(selectBuildId = null) {
-  // Added parameter to optionally select a build
-  if (!buildSelector) return; // Exit if buildSelector is not on the page
+  if (!buildSelector) return;
   toggleMainLoader(true);
   try {
     const token = localStorage.getItem("token");
@@ -935,9 +966,9 @@ async function loadBuildList(selectBuildId = null) {
         selectBuildId &&
         buildSelector.querySelector(`option[value="${selectBuildId}"]`)
       ) {
-        buildSelector.value = selectBuildId; // Select the specified build
+        buildSelector.value = selectBuildId;
       } else if (buildSelector.options.length > 0) {
-        // buildSelector.value = buildSelector.options[0].value; // Default to first if no specific selection
+        // buildSelector.value = buildSelector.options[0].value; // Optionally default to first
       }
     }
   } catch (error) {
@@ -958,6 +989,7 @@ async function loadBuild(id) {
     : getTranslation("anonymous_author");
 
   if (!id) {
+    // Handle loading an empty/new build state
     Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
     document.querySelectorAll(".selected-part").forEach((el) => el.remove());
     document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
@@ -981,10 +1013,10 @@ async function loadBuild(id) {
       buildAuthorSpan.textContent =
         currentUsername || getTranslation("you_author_placeholder");
     }
-    updateTotal(); // This will also update currentBuildNumericTotalPrice to 0
+    updateTotal();
     if (geminiResponseModalOutput) geminiResponseModalOutput.value = "";
     currentBuildId = null;
-    if (buildSelector) buildSelector.value = ""; // Clear selection in dropdown for new build
+    if (buildSelector) buildSelector.value = "";
     return;
   }
 
@@ -992,7 +1024,7 @@ async function loadBuild(id) {
   if (geminiResponseModalOutput) geminiResponseModalOutput.value = "";
 
   try {
-    if (!token) return;
+    if (!token) return; // Should be handled by calling context
     const res = await fetch(API.load(id), {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -1016,7 +1048,7 @@ async function loadBuild(id) {
       buildAuthorSpan.textContent =
         cfg.authorName || getTranslation("anonymous_author");
     }
-    if (buildSelector) buildSelector.value = cfg._id; // Ensure dropdown reflects loaded build
+    if (buildSelector) buildSelector.value = cfg._id;
 
     Object.keys(selectedParts).forEach((c) => delete selectedParts[c]);
     document.querySelectorAll(".selected-part").forEach((el) => el.remove());
@@ -1050,12 +1082,68 @@ async function loadBuild(id) {
       const products = (await Promise.all(productsPromises)).filter((p) => p);
       products.forEach((p) => {
         if (p && p.category) renderPart(p.category, p);
-        else console.warn("Отримано недійсний або неповний компонент:", p);
+        else
+          console.warn("Получен недействительный или неполный компонент:", p);
       });
     }
-    updateTotal(); // This will also update currentBuildNumericTotalPrice based on loaded parts
+    updateTotal();
   } catch (error) {
     console.error(getTranslation("error_loading_build_status"), error);
+  } finally {
+    toggleMainLoader(false);
+  }
+}
+
+// NEW: Function to show build area and load content
+async function showBuildAreaAndLoadContent() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    showLoginModal(); // Prompt login if not authenticated
+    return;
+  }
+  sessionStorage.setItem("hasProceededPastWelcome", "true"); // Set flag
+
+  // Show build area, hide welcome
+  if (welcomeSection) welcomeSection.style.display = "none";
+  if (buildHeader) buildHeader.style.display = "flex";
+  if (partsListSection) partsListSection.style.display = "flex";
+
+  updateAuthUI(); // Ensure UI elements (buttons etc.) are correctly enabled/disabled for build area
+
+  toggleMainLoader(true);
+  try {
+    await loadBuildList(); // Load/refresh build list for the dropdown
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let initialBuildId = urlParams.get("config");
+
+    // If no URL param, try the first build in the selector
+    if (
+      !initialBuildId &&
+      buildSelector &&
+      buildSelector.options.length > 0 &&
+      buildSelector.options[0].value
+    ) {
+      initialBuildId = buildSelector.options[0].value;
+    }
+
+    if (
+      initialBuildId &&
+      buildSelector.querySelector(`option[value="${initialBuildId}"]`)
+    ) {
+      if (buildSelector) buildSelector.value = initialBuildId;
+      await loadBuild(initialBuildId);
+    } else if (newBuildBtn) {
+      // Simulate click on "New Build" if no specific build is to be loaded or found
+      // This will trigger the newBuildBtn's event listener which handles creation and loading
+      newBuildBtn.click();
+    } else {
+      // Fallback: if no builds and no new button (should ideally not happen if logged in and build area shown)
+      await loadBuild(null); // Load an empty state
+    }
+  } catch (error) {
+    console.error("Ошибка в showBuildAreaAndLoadContent:", error);
+    // Handle error appropriately, maybe show an error message to the user
   } finally {
     toggleMainLoader(false);
   }
@@ -1065,7 +1153,7 @@ if (newBuildBtn) {
   newBuildBtn.addEventListener("click", async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      showLoginModal(); // Show login modal if not logged in
+      showLoginModal(); // Should not happen if button is enabled correctly by updateAuthUI
       return;
     }
     toggleMainLoader(true);
@@ -1086,15 +1174,15 @@ if (newBuildBtn) {
           name: defaultBuildName,
           components: [],
           totalPrice: 0,
-        }), // Explicitly set totalPrice to 0
+        }),
       });
       if (!res.ok)
         throw new Error(
           `${getTranslation("error_creating_build_status")}: ${res.status}`
         );
       const b = await res.json();
-      await loadBuildList(b._id); // Pass new build ID to select it
-      await loadBuild(b._id);
+      await loadBuildList(b._id); // Refresh dropdown and select the new build
+      await loadBuild(b._id); // Load the content of the new build
     } catch (error) {
       console.error(getTranslation("error_creating_build_status"), error);
       alert(getTranslation("alert_error_creating_build"));
@@ -1117,20 +1205,23 @@ if (buildNameElement) {
     const newName =
       buildNameElement.textContent.trim() ||
       getTranslation("unnamed_build_placeholder");
-    buildNameElement.textContent = newName;
-    if (!currentBuildId) return;
+    buildNameElement.textContent = newName; // Normalize the displayed name
+    if (!currentBuildId) return; // Don't save if it's a new, unsaved build
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) return; // Don't save if not logged in
+
+    // Update name in the dropdown selector
     const optionInSelector = buildSelector?.querySelector(
       `option[value="${currentBuildId}"]`
     );
     if (optionInSelector) optionInSelector.textContent = newName;
+
+    // Update name in the sidebar current build display
     const currentBuildNameDisplay =
       document.getElementById("current-build-name");
     if (currentBuildNameDisplay) currentBuildNameDisplay.textContent = newName;
+
     try {
-      // When name is updated, we might also want to save the current totalPrice
-      // However, the primary trigger for totalPrice update is component change via "buildUpdated"
       await fetch(API.update(currentBuildId), {
         method: "PUT",
         headers: {
@@ -1140,7 +1231,7 @@ if (buildNameElement) {
         body: JSON.stringify({ name: newName }), // Only send name if only name changed
       });
     } catch (error) {
-      console.error("Помилка оновлення назви збірки:", error);
+      console.error("Ошибка обновления названия сборки:", error);
     }
   });
 }
@@ -1155,7 +1246,7 @@ window.addEventListener("buildUpdated", async () => {
   }
   const buildDataToSave = {
     components: getCurrentPartsData(),
-    totalPrice: currentBuildNumericTotalPrice, // Send the numeric total price
+    totalPrice: currentBuildNumericTotalPrice,
   };
   try {
     await fetch(API.update(currentBuildId), {
@@ -1167,7 +1258,7 @@ window.addEventListener("buildUpdated", async () => {
       body: JSON.stringify(buildDataToSave),
     });
   } catch (e) {
-    console.error("Помилка автозбереження:", e);
+    console.error("Ошибка автосохранения:", e);
   } finally {
     isSaving = false;
   }
@@ -1185,10 +1276,11 @@ async function showGeminiResponseInModal(
     !geminiResponseModalOutput
   ) {
     console.error(
-      "Один або декілька елементів модального вікна Gemini не знайдено."
+      "Один или несколько элементов модального окна Gemini не найдены."
     );
     return;
   }
+  // Ensure textarea is visible and any temp content is hidden
   const tempDetailContent = geminiResponseModalOverlay.querySelector(
     ".temp-detail-content"
   );
@@ -1196,24 +1288,29 @@ async function showGeminiResponseInModal(
   if (geminiResponseModalOutput.tagName === "TEXTAREA") {
     geminiResponseModalOutput.style.display = "block";
   }
+
   translateDynamicElement(geminiResponseModalTitle, modalTitleKey);
   const loaderTextElement = geminiResponseLoader.querySelector("p");
   if (loaderTextElement)
     translateDynamicElement(loaderTextElement, "processing_request");
-  geminiResponseModalOutput.value = "";
-  geminiResponseLoader.style.display = "flex";
-  geminiResponseModalOverlay.style.display = "flex";
-  document.body.style.overflow = "hidden";
-  if (triggerButtonElement) triggerButtonElement.disabled = true;
+
+  geminiResponseModalOutput.value = ""; // Clear previous output
+  geminiResponseLoader.style.display = "flex"; // Show loader
+  geminiResponseModalOverlay.style.display = "flex"; // Show modal
+  document.body.style.overflow = "hidden"; // Prevent background scroll
+  if (triggerButtonElement) triggerButtonElement.disabled = true; // Disable button during API call
+
   try {
     const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-    const apiKey = "AIzaSyAAtZYb30LUDpGEQ4JcF_9oEejBbnXN4g8"; // Replace with your actual API key
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const apiKey = "AIzaSyAAtZYb30LUDpGEQ4JcF_9oEejBbnXN4g8"; // IMPORTANT: Replace with your actual API key or use a secure way to provide it
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
@@ -1232,13 +1329,13 @@ async function showGeminiResponseInModal(
       );
     }
   } catch (error) {
-    console.error("Помилка при взаємодії з Gemini API:", error);
+    console.error("Ошибка при взаимодействии с Gemini API:", error);
     geminiResponseModalOutput.value = `${getTranslation("error_prefix")}: ${
       error.message
     }. ${getTranslation("check_console_details")}`;
   } finally {
-    if (geminiResponseLoader) geminiResponseLoader.style.display = "none";
-    if (triggerButtonElement) triggerButtonElement.disabled = false;
+    if (geminiResponseLoader) geminiResponseLoader.style.display = "none"; // Hide loader
+    if (triggerButtonElement) triggerButtonElement.disabled = false; // Re-enable button
   }
 }
 
@@ -1247,6 +1344,7 @@ if (closeGeminiResponseModalBtn) {
     if (geminiResponseModalOverlay)
       geminiResponseModalOverlay.style.display = "none";
     document.body.style.overflow = "";
+    // Ensure textarea is visible and any temp content is hidden when closing
     const tempContent = geminiResponseModalOverlay.querySelector(
       ".temp-detail-content"
     );
@@ -1262,6 +1360,7 @@ if (closeGeminiResponseModalBtn) {
 if (geminiResponseModalOverlay) {
   geminiResponseModalOverlay.addEventListener("click", (event) => {
     if (event.target === geminiResponseModalOverlay) {
+      // Click on overlay itself
       geminiResponseModalOverlay.style.display = "none";
       document.body.style.overflow = "";
       const tempContent = geminiResponseModalOverlay.querySelector(
@@ -1346,6 +1445,7 @@ async function handleGetCompatibilityAdvice() {
           part.specs.memory.ram_type
         })`;
       if (category === "RAM" && part.specs?.type)
+        // Assuming RAM type is in specs.type
         details += ` (${getTranslation("type_label")}: ${part.specs.type})`;
       if (category === "GPU" && part.specs?.length_mm)
         details += ` (${getTranslation("length_label")}: ${
@@ -1404,12 +1504,12 @@ async function handleEstimatePerformance() {
     if (category === "Storage" && part.specs?.type && part.specs?.capacity)
       details += ` (${
         getTranslation(
-          "spec_key_" +
+          "spec_key_" + // Attempt to translate storage type
             String(part.specs.type)
               .toLowerCase()
               .replace(/\s+/g, "_")
-              .replace(/\./g, "_")
-        ) || part.specs.type
+              .replace(/\./g, "_") // Replace dots if any in type string
+        ) || part.specs.type // Fallback to original type string
       } ${part.specs.capacity}${part.specs.capacity_unit || "GB"})`;
     componentsDetails += `- ${details}\n`;
   });
@@ -1429,46 +1529,62 @@ async function handleEstimatePerformance() {
 // --- Auth Modal Logic ---
 function showLoginModal() {
   if (loginModalOverlay) loginModalOverlay.style.display = "flex";
-  if (registerModalOverlay) registerModalOverlay.style.display = "none";
-  if (loginErrorModal) loginErrorModal.textContent = "";
-  document.body.style.overflow = "hidden";
+  if (registerModalOverlay) registerModalOverlay.style.display = "none"; // Hide register modal if open
+  if (loginErrorModal) loginErrorModal.textContent = ""; // Clear previous errors
+  document.body.style.overflow = "hidden"; // Prevent background scroll
 }
 function closeLoginModal() {
   if (loginModalOverlay) loginModalOverlay.style.display = "none";
-  document.body.style.overflow = "";
+  document.body.style.overflow = ""; // Restore background scroll
 }
 function showRegisterModal() {
   if (registerModalOverlay) registerModalOverlay.style.display = "flex";
-  if (loginModalOverlay) loginModalOverlay.style.display = "none";
-  if (registerErrorModal) registerErrorModal.textContent = "";
-  document.body.style.overflow = "hidden";
+  if (loginModalOverlay) loginModalOverlay.style.display = "none"; // Hide login modal if open
+  if (registerErrorModal) registerErrorModal.textContent = ""; // Clear previous errors
+  document.body.style.overflow = "hidden"; // Prevent background scroll
 }
 function closeRegisterModal() {
   if (registerModalOverlay) registerModalOverlay.style.display = "none";
-  document.body.style.overflow = "";
+  document.body.style.overflow = ""; // Restore background scroll
 }
 
 function updateAuthUI() {
   const token = localStorage.getItem("token");
   const currentUser = token ? parseJwt(token) : null;
+  const isLoggedIn = !!currentUser;
 
-  if (currentUser) {
-    if (loggedOutView) loggedOutView.style.display = "none";
-    if (loggedInView) loggedInView.style.display = "flex";
+  if (loggedOutView) loggedOutView.style.display = isLoggedIn ? "none" : "flex";
+  if (loggedInView) loggedInView.style.display = isLoggedIn ? "flex" : "none";
+
+  if (isLoggedIn) {
     if (sidebarUsername)
       sidebarUsername.textContent = currentUser.username || "User";
-    if (newBuildBtn) newBuildBtn.disabled = false;
-    if (buildSelector) buildSelector.disabled = false;
-    if (buildNameElement) buildNameElement.contentEditable = "true";
+    // Enable navBuildBtn and startBuildingBtn (though their click handlers will re-check login if needed)
+    if (navBuildBtn) navBuildBtn.style.pointerEvents = "auto";
+    if (startBuildingBtn) startBuildingBtn.disabled = false;
+
+    // Enable build specific buttons ONLY if the build area is currently visible
+    const buildAreaIsVisible =
+      buildHeader && buildHeader.style.display !== "none";
+    if (newBuildBtn) newBuildBtn.disabled = !buildAreaIsVisible;
+    if (buildSelector) buildSelector.disabled = !buildAreaIsVisible;
+    if (buildNameElement)
+      buildNameElement.contentEditable = buildAreaIsVisible ? "true" : "false";
     document
       .querySelectorAll(".part-category .add-btn")
-      .forEach((btn) => (btn.disabled = false));
-    if (generateDescriptionBtn) generateDescriptionBtn.disabled = false;
-    if (getCompatibilityAdviceBtn) getCompatibilityAdviceBtn.disabled = false;
-    if (estimatePerformanceBtn) estimatePerformanceBtn.disabled = false;
+      .forEach((btn) => (btn.disabled = !buildAreaIsVisible));
+    if (generateDescriptionBtn)
+      generateDescriptionBtn.disabled = !buildAreaIsVisible;
+    if (getCompatibilityAdviceBtn)
+      getCompatibilityAdviceBtn.disabled = !buildAreaIsVisible;
+    if (estimatePerformanceBtn)
+      estimatePerformanceBtn.disabled = !buildAreaIsVisible;
   } else {
-    if (loggedOutView) loggedOutView.style.display = "flex";
-    if (loggedInView) loggedInView.style.display = "none";
+    // Logged out state
+    if (navBuildBtn) navBuildBtn.style.pointerEvents = "auto"; // Keep nav enabled, click will prompt login
+    if (startBuildingBtn) startBuildingBtn.disabled = false; // Keep welcome button enabled
+
+    // Always disable build-specific UI when logged out
     if (newBuildBtn) newBuildBtn.disabled = true;
     if (buildSelector) {
       buildSelector.disabled = true;
@@ -1477,7 +1593,10 @@ function updateAuthUI() {
       )}</option>`;
     }
     if (buildNameElement) {
-      buildNameElement.textContent = getTranslation("login_to_start");
+      // Only update text if build area is visible, but always make non-editable
+      if (buildHeader && buildHeader.style.display !== "none") {
+        buildNameElement.textContent = getTranslation("login_to_start");
+      }
       buildNameElement.contentEditable = "false";
     }
     document
@@ -1487,30 +1606,32 @@ function updateAuthUI() {
     if (getCompatibilityAdviceBtn) getCompatibilityAdviceBtn.disabled = true;
     if (estimatePerformanceBtn) estimatePerformanceBtn.disabled = true;
 
-    // Clear build specific info for logged out state
-    if (totalPriceSpan) totalPriceSpan.textContent = "0";
-    if (compatibilitySpan)
-      translateDynamicElement(
-        compatibilitySpan,
-        "compatibility_status_unknown"
-      );
-    if (compicon) compicon.className = "fa fa-question-circle";
-    if (totalTdpSpan) totalTdpSpan.textContent = "0";
-    if (buildDateSpan) buildDateSpan.textContent = "—";
-    if (buildAuthorSpan) buildAuthorSpan.textContent = "—";
-    Object.keys(selectedParts).forEach((cat) => delete selectedParts[cat]);
-    document.querySelectorAll(".selected-part").forEach((el) => el.remove());
-    document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
-      const catElement = btn.closest(".part-category");
-      const categoryKey =
-        catElement?.querySelector("h3")?.dataset.translateCategory ||
-        catElement?.dataset.cat ||
-        "Part";
-      const categoryName = getTranslation(categoryKey);
-      btn.textContent = `${getTranslation("add_btn_prefix")}${categoryName}`;
-      btn.classList.remove("swap-btn");
-    });
-    currentBuildId = null;
+    // Clear build info only if build area is visible
+    if (buildHeader && buildHeader.style.display !== "none") {
+      if (totalPriceSpan) totalPriceSpan.textContent = "0";
+      if (compatibilitySpan)
+        translateDynamicElement(
+          compatibilitySpan,
+          "compatibility_status_unknown"
+        );
+      if (compicon) compicon.className = "fa fa-question-circle"; // Default icon
+      if (totalTdpSpan) totalTdpSpan.textContent = "0";
+      if (buildDateSpan) buildDateSpan.textContent = "—";
+      if (buildAuthorSpan) buildAuthorSpan.textContent = "—";
+      Object.keys(selectedParts).forEach((cat) => delete selectedParts[cat]);
+      document.querySelectorAll(".selected-part").forEach((el) => el.remove());
+      document.querySelectorAll(".part-category .add-btn").forEach((btn) => {
+        const catElement = btn.closest(".part-category");
+        const categoryKey =
+          catElement?.querySelector("h3")?.dataset.translateCategory ||
+          catElement?.dataset.cat ||
+          "Part";
+        const categoryName = getTranslation(categoryKey);
+        btn.textContent = `${getTranslation("add_btn_prefix")}${categoryName}`;
+        btn.classList.remove("swap-btn");
+      });
+      currentBuildId = null;
+    }
   }
 }
 
@@ -1558,16 +1679,10 @@ if (loginFormModal) {
         localStorage.setItem("token", data.token);
         updateAuthUI();
         closeLoginModal();
-        await loadBuildList(); // Reload build list
-        // Attempt to load the first build or create a new one if list is empty
-        if (
-          buildSelector &&
-          buildSelector.options.length > 0 &&
-          buildSelector.options[0].value
-        ) {
-          await loadBuild(buildSelector.options[0].value);
-        } else if (newBuildBtn) {
-          newBuildBtn.click(); // Create and load a new build
+        // If build area is already visible, reload its content.
+        // Otherwise, user will click "Build" or "Start Building" to show it.
+        if (buildHeader && buildHeader.style.display !== "none") {
+          await showBuildAreaAndLoadContent();
         }
       } else {
         if (loginErrorModal)
@@ -1575,7 +1690,7 @@ if (loginFormModal) {
             data.message || getTranslation("error_login_failed");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Ошибка входа:", error);
       if (loginErrorModal)
         loginErrorModal.textContent = getTranslation("error_login_failed");
     }
@@ -1606,7 +1721,7 @@ if (registerFormModal) {
             data.message || getTranslation("error_registration_failed");
       }
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Ошибка регистрации:", error);
       if (registerErrorModal)
         registerErrorModal.textContent = getTranslation(
           "error_registration_failed"
@@ -1618,9 +1733,18 @@ if (registerFormModal) {
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("token");
+    sessionStorage.removeItem("hasProceededPastWelcome"); // Clear the flag on logout
     updateAuthUI();
-    // Optionally, clear the current build or redirect
-    loadBuild(null); // Load an empty/new build state
+    // Show welcome screen after logout and hide build area
+    if (welcomeSection) welcomeSection.style.display = "flex";
+    if (buildHeader) buildHeader.style.display = "none";
+    if (partsListSection) partsListSection.style.display = "none";
+    currentBuildId = null; // Clear current build context
+    // Close sidebar if open on mobile
+    if (sidebarElement) sidebarElement.classList.remove("sidebar-open");
+    if (mobileOverlayElement) mobileOverlayElement.classList.remove("active");
+    if (hamburgerMenuBtn)
+      hamburgerMenuBtn.setAttribute("aria-expanded", "false");
   });
 }
 
@@ -1634,14 +1758,14 @@ async function showMyBuildsModal() {
   )
     return;
   myBuildsModalOverlay.style.display = "flex";
-  myBuildsListContainer.innerHTML = "";
-  myBuildsError.textContent = "";
-  myBuildsLoader.style.display = "flex";
+  myBuildsListContainer.innerHTML = ""; // Clear previous list
+  myBuildsError.textContent = ""; // Clear previous errors
+  myBuildsLoader.style.display = "flex"; // Show loader
   translateDynamicElement(
     myBuildsLoader.querySelector("p"),
     "loading_my_builds"
   );
-  document.body.style.overflow = "hidden";
+  document.body.style.overflow = "hidden"; // Prevent background scroll
 
   try {
     const token = localStorage.getItem("token");
@@ -1701,7 +1825,7 @@ async function showMyBuildsModal() {
     console.error(getTranslation("error_loading_build_list"), error);
     myBuildsError.textContent = getTranslation("error_loading_build_list");
   } finally {
-    if (myBuildsLoader) myBuildsLoader.style.display = "none";
+    if (myBuildsLoader) myBuildsLoader.style.display = "none"; // Hide loader
   }
 }
 
@@ -1725,13 +1849,21 @@ if (myBuildsListContainer) {
     const buildId = target.dataset.id;
 
     if (target.classList.contains("load-build-btn-modal") && buildId) {
+      // Ensure build area is shown before loading
+      sessionStorage.setItem("hasProceededPastWelcome", "true"); // Also set flag here
+      if (welcomeSection) welcomeSection.style.display = "none";
+      if (buildHeader) buildHeader.style.display = "flex";
+      if (partsListSection) partsListSection.style.display = "flex";
+      updateAuthUI(); // Ensure build UI elements are enabled
       await loadBuild(buildId);
       if (myBuildsModalOverlay) myBuildsModalOverlay.style.display = "none";
       document.body.style.overflow = "";
     } else if (target.classList.contains("delete-build-btn-modal") && buildId) {
       const buildName = target.dataset.name;
+      // ВАЖНО: Заменить window.confirm на кастомное модальное окно в реальном приложении
       if (
         confirm(
+          // Используем confirm для простоты, но лучше кастомное модальное окно
           getTranslation("confirm_delete_build_message", undefined, {
             buildName,
           })
@@ -1739,27 +1871,49 @@ if (myBuildsListContainer) {
       ) {
         try {
           const token = localStorage.getItem("token");
-          if (!token) return;
-          const res = await fetch(API.update(buildId), {
-            // Should be API.delete(buildId)
+          if (!token) return; // Should not happen if delete button is clickable
+          const res = await fetch(API.delete(buildId), {
+            // Using API.delete
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!res.ok) throw new Error(getTranslation("error_deleting_build"));
           alert(
+            // Используем alert для простоты
             getTranslation("build_deleted_successfully", undefined, {
               buildName,
             })
           );
-          showMyBuildsModal(); // Refresh list
+          await showMyBuildsModal(); // Refresh list in modal
           await loadBuildList(); // Refresh main dropdown
           if (currentBuildId === buildId) {
-            // If deleted build was current, load new/empty
-            loadBuild(null);
+            // If deleted build was current, load the first available build or create new
+            if (
+              buildSelector &&
+              buildSelector.options.length > 0 &&
+              buildSelector.options[0].value
+            ) {
+              await loadBuild(buildSelector.options[0].value);
+            } else if (
+              newBuildBtn &&
+              buildHeader &&
+              buildHeader.style.display !== "none"
+            ) {
+              // Only if build area is active
+              newBuildBtn.click();
+            } else {
+              // If build area was active but now no builds, show welcome
+              sessionStorage.removeItem("hasProceededPastWelcome"); // Allow welcome screen again
+              if (welcomeSection) welcomeSection.style.display = "flex";
+              if (buildHeader) buildHeader.style.display = "none";
+              if (partsListSection) partsListSection.style.display = "none";
+              loadBuild(null); // Clear any build context
+              updateAuthUI(); // Update UI to reflect no active build area
+            }
           }
         } catch (error) {
           console.error(getTranslation("error_deleting_build"), error);
-          alert(getTranslation("error_deleting_build_generic"));
+          alert(getTranslation("error_deleting_build_generic")); // Используем alert
         }
       }
     }
@@ -1781,6 +1935,7 @@ window.addEventListener("languageChanged", async (event) => {
   await translatePage(); // Ensure page elements are translated first
   updateAuthUI(); // Then update UI based on auth state, which might re-translate some elements
 
+  // Re-translate dynamic loader texts
   const mainLoaderText = mainBuildLoaderOverlay?.querySelector("p");
   if (mainLoaderText)
     translateDynamicElement(mainLoaderText, "loading_build_data");
@@ -1799,12 +1954,16 @@ window.addEventListener("languageChanged", async (event) => {
   if (myBuildsLoaderText)
     translateDynamicElement(myBuildsLoaderText, "loading_my_builds");
 
+  // Re-translate compatibility status if build area is visible
   if (
     compatibilitySpan &&
+    buildHeader &&
+    buildHeader.style.display !== "none" &&
     compatibilitySpan.textContent !==
-      getTranslation("compatibility_status_unknown")
+      getTranslation("compatibility_status_unknown") // Avoid re-translating if it's already "unknown"
   ) {
-    const isCompatible = compatibilitySpan.style.color === "var(--success)";
+    const isCompatible =
+      compicon && compicon.classList.contains("fa-check-circle"); // Check icon class
     translateDynamicElement(
       compatibilitySpan,
       isCompatible
@@ -1812,31 +1971,37 @@ window.addEventListener("languageChanged", async (event) => {
         : "compatibility_status_incompatible"
     );
   }
+  // Re-translate Gemini button texts
   if (generateDescriptionBtn)
-    generateDescriptionBtn.innerHTML = ` ${getTranslation(
+    generateDescriptionBtn.innerHTML = `${getTranslation(
+      // Added emoji back
       "generate_description_btn"
     )}`;
   if (getCompatibilityAdviceBtn)
-    getCompatibilityAdviceBtn.innerHTML = ` ${getTranslation(
+    getCompatibilityAdviceBtn.innerHTML = `${getTranslation(
+      // Added emoji back
       "compatibility_advice_btn"
     )}`;
   if (estimatePerformanceBtn)
-    estimatePerformanceBtn.innerHTML = ` ${getTranslation(
+    estimatePerformanceBtn.innerHTML = `${getTranslation(
+      // Added emoji back
       "estimate_performance_btn"
     )}`;
 
+  // Re-translate product detail modal title if open
   if (
     productDetailModalOverlay &&
     productDetailModalOverlay.style.display === "flex" &&
     productDetailModalTitleElement
   ) {
-    const currentProductNameInModal = productDetailName?.textContent || "";
+    const currentProductNameInModal = productDetailName?.textContent || ""; // Get current name from modal
     productDetailModalTitleElement.textContent = getTranslation(
       "part_details_title_modal",
       undefined,
       { partName: currentProductNameInModal }
     );
   }
+  // Re-translate "Add to Build" button in product detail modal
   const currentDetailModalAddToBuildButton = document.getElementById(
     "productDetailAddToBuildBtn"
   );
@@ -1846,6 +2011,7 @@ window.addEventListener("languageChanged", async (event) => {
     if (btnTextSpan) {
       btnTextSpan.textContent = getTranslation("add_to_build_btn_modal");
     } else {
+      // Fallback if span is not found
       currentDetailModalAddToBuildButton.innerHTML = `<i class="fas fa-plus-circle"></i> ${getTranslation(
         "add_to_build_btn_modal"
       )}`;
@@ -1853,43 +2019,62 @@ window.addEventListener("languageChanged", async (event) => {
   }
 });
 
+// --- Hamburger Menu Logic ---
+if (hamburgerMenuBtn && sidebarElement && mobileOverlayElement) {
+  hamburgerMenuBtn.addEventListener("click", () => {
+    const isSidebarOpen = sidebarElement.classList.toggle("sidebar-open");
+    mobileOverlayElement.classList.toggle("active", isSidebarOpen);
+    hamburgerMenuBtn.setAttribute("aria-expanded", isSidebarOpen.toString());
+    document.body.style.overflow = isSidebarOpen ? "hidden" : ""; // Prevent/allow body scroll
+  });
+
+  mobileOverlayElement.addEventListener("click", () => {
+    sidebarElement.classList.remove("sidebar-open");
+    mobileOverlayElement.classList.remove("active");
+    hamburgerMenuBtn.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+  });
+}
+
+// MODIFIED: init function
 (async function init() {
-  updateAuthUI(); // Initial UI update based on token presence
-  await loadBuildList(); // Load build list for dropdown
+  updateAuthUI(); // Update UI based on token (enables/disables buttons, sets user info)
+  translatePage(); // Translate static elements on the page
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const configIdFromUrl = urlParams.get("config");
-  let initialBuildId = null;
+  const hasProceeded = sessionStorage.getItem("hasProceededPastWelcome");
 
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    // User is logged in
-    if (
-      configIdFromUrl &&
-      buildSelector?.querySelector(`option[value="${configIdFromUrl}"]`)
-    ) {
-      initialBuildId = configIdFromUrl;
-    } else if (
-      buildSelector?.options.length > 0 &&
-      buildSelector.options[0]?.value
-    ) {
-      initialBuildId = buildSelector.options[0].value; // Default to the first build
-    }
-
-    if (initialBuildId) {
-      if (buildSelector) buildSelector.value = initialBuildId;
-      await loadBuild(initialBuildId);
-    } else if (newBuildBtn) {
-      // No specific build, no existing builds, create new
-      newBuildBtn.click();
-    } else {
-      // Fallback if newBuildBtn is not available (should not happen if logged in)
-      loadBuild(null);
-    }
+  if (hasProceeded === "true") {
+    // If user has already proceeded, directly show build area
+    await showBuildAreaAndLoadContent();
   } else {
-    // User is not logged in
-    loadBuild(null); // Load empty state, UI will be set by updateAuthUI
+    // Otherwise, show welcome screen
+    if (welcomeSection) welcomeSection.style.display = "flex";
+    if (buildHeader) buildHeader.style.display = "none";
+    if (partsListSection) partsListSection.style.display = "none";
   }
-  translatePage(); // Ensure all static elements are translated
+
+  // Event listener for "Build" navigation button
+  if (navBuildBtn) {
+    navBuildBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      showBuildAreaAndLoadContent(); // This function will handle login check and loading
+      // Close mobile sidebar if open
+      if (sidebarElement && sidebarElement.classList.contains("sidebar-open")) {
+        sidebarElement.classList.remove("sidebar-open");
+        mobileOverlayElement.classList.remove("active");
+        hamburgerMenuBtn.setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+      }
+    });
+  }
+
+  // Event listener for "Start Building" button on welcome screen
+  if (startBuildingBtn) {
+    startBuildingBtn.addEventListener("click", () => {
+      showBuildAreaAndLoadContent(); // This function will handle login check and loading
+    });
+  }
+
+  // Other initializations like theme toggle, language switcher events
+  // These should be independent of the build area visibility logic
 })();
