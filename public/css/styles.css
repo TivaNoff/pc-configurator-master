@@ -2277,6 +2277,9 @@ object {
     font-size: 0.85rem;
     width: 100%; /* Full width for inputs */
   }
+  #productDetailSpecs {
+    padding: 0;
+  }
   .auth-modal {
     padding: 1.5rem;
   }
