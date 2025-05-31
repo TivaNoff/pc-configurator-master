@@ -1209,7 +1209,7 @@ async function showGeminiResponseInModal(
 
   try {
     const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-    const apiKey = "";
+    const apiKey = "AIzaSyAAtZYb30LUDpGEQ4JcF_9oEejBbnXN4g8";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
@@ -1477,15 +1477,15 @@ window.addEventListener("languageChanged", () => {
     );
   }
   if (generateDescriptionBtn)
-    generateDescriptionBtn.innerHTML = `✨ ${getTranslation(
+    generateDescriptionBtn.innerHTML = ` ${getTranslation(
       "generate_description_btn"
     )}`;
   if (getCompatibilityAdviceBtn)
-    getCompatibilityAdviceBtn.innerHTML = `✨ ${getTranslation(
+    getCompatibilityAdviceBtn.innerHTML = ` ${getTranslation(
       "compatibility_advice_btn"
     )}`;
   if (estimatePerformanceBtn)
-    estimatePerformanceBtn.innerHTML = `✨ ${getTranslation(
+    estimatePerformanceBtn.innerHTML = ` ${getTranslation(
       "estimate_performance_btn"
     )}`;
 

@@ -449,8 +449,6 @@ const translations = {
     spec_table_header_spec: "Specification",
     spec_table_header_value: "Value",
     add_to_build_btn_modal: "Add to Build",
-    affiliate_disclaimer:
-      "* BuildCores may receive compensation for affiliate sales through these links",
 
     // Saved Builds Page & General Errors
     please_login_to_see_builds: "Please login to see saved builds.",
@@ -923,8 +921,6 @@ const translations = {
     spec_table_header_spec: "Характеристика",
     spec_table_header_value: "Значення",
     add_to_build_btn_modal: "Додати до збірки",
-    affiliate_disclaimer:
-      "* BuildCores може отримувати компенсацію за партнерські продажі за цими посиланнями",
 
     // Saved Builds Page & General Errors
     please_login_to_see_builds:
