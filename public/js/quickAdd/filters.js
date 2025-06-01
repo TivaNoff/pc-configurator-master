@@ -45,7 +45,6 @@ const categoryFilterConfigs = {
       cpuManufacturerFilter: "metadata.manufacturer",
       cpuCoreCountFilter: "cores.total",
       cpuLithographyFilter: "specifications.lithography",
-      cpuIntegratedGraphicsFilter: "integrated_graphics",
     },
   },
   gpu: {
@@ -121,7 +120,7 @@ const categoryFilterConfigs = {
     filters: {
       coolerManufacturerFilter: "metadata.manufacturer",
       coolerWaterCooledFilter: "water_cooled",
-      coolerRadiatorSizeFilter: "radiator_size_mm",
+      coolerRadiatorSizeFilter: "radiator_size",
     },
   },
   monitor: {
