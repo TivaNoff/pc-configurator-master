@@ -1420,12 +1420,12 @@ object {
 
 .product-detail-content {
   display: flex;
-  flex-direction: column; /* Default to column for small screens */
+  flex-direction: row; /* Default to column for small screens */
   flex-grow: 1;
   padding: 1.5rem;
   gap: 1.5rem; /* Gap between gallery and info */
   overflow-y: auto; /* Allow content to scroll if it overflows */
-  min-height: 260px;
+  min-height: 310px;
 }
 
 .product-detail-gallery {
