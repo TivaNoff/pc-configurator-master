@@ -1934,9 +1934,9 @@ object {
   min-height: 2.75rem; /* Retain minimum height */
   position: fixed;
   bottom: 0;
-  width: 100%; /* Ensure footer spans full width */
   background: var(--bg-alt);
   display: flex;
+  width: -webkit-fill-available;
   align-items: center;
   font-size: 0.8rem;
   justify-content: flex-end; /* Keep content to the right */
@@ -1950,6 +1950,11 @@ object {
 .sitefooterling {
   color: var(--placeholder-color);
 }
+
+/* .sitefooterwrapper {
+  display: flex;
+  justify-content: center;
+} */
 
 /* --- Media Queries for Responsiveness --- */
 
