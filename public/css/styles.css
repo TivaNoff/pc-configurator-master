@@ -1964,7 +1964,7 @@ object {
     width: 200px; /* Slightly reduce sidebar width */
     padding: 12px;
     font-size: 0.9rem;
-    z-index: 2000; /* Adjust base font for sidebar */
+    z-index: 1100; /* Adjust base font for sidebar */
     /* Sidebar is already fixed, transform will be handled by JS/class */
   }
   .sidebar.sidebar-hidden {
