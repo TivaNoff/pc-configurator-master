@@ -52,14 +52,15 @@ const newBuildBtn = document.getElementById("new-build");
 const totalPriceSpan = document.getElementById("totalPrice");
 const compatibilitySpan = document.getElementById("compatibility");
 const compicon = document.getElementById("compicon");
+const compbox = document.getElementById("info-item-compatible");
 const totalTdpSpan = document.getElementById("totalTdp");
 const buildDateSpan = document.getElementById("build-date");
 const buildAuthorSpan = document.getElementById("build-author");
 
 // --- Sections ---
-const welcomeSection = document.getElementById("welcome-section"); 
-const buildHeader = document.querySelector(".build-header"); 
-const partsListSection = document.querySelector(".parts-list"); 
+const welcomeSection = document.getElementById("welcome-section");
+const buildHeader = document.querySelector(".build-header");
+const partsListSection = document.querySelector(".parts-list");
 
 // Sidebar auth elements
 const loggedOutView = document.getElementById("logged-out-view");
@@ -772,6 +773,7 @@ function updateTotal() {
       compatibilitySpan.style.color = "rgba(60, 131, 246)";
       compicon.className = "fa fa-check-circle";
       compicon.style.color = "rgba(60, 131, 246)";
+      compbox.className = "info-item compatible";
       if (compatibilityAdvisorTriggerSection)
         compatibilityAdvisorTriggerSection.style.display = "none";
     } else {
@@ -782,6 +784,7 @@ function updateTotal() {
       compatibilitySpan.style.color = "var(--error-color)";
       compicon.className = "fa fa-times-circle";
       compicon.style.color = "var(--error-color)";
+      compbox.className = "info-item compatible error-shadow";
       if (compatibilityAdvisorTriggerSection)
         compatibilityAdvisorTriggerSection.style.display = "block";
     }

@@ -10,7 +10,7 @@
   --border: #333;
   --border-light: #444;
   --success: #4caf50;
-  --error-color: #f44336;
+  --error-color: rgb(244, 67, 54);
   --shadow-color: rgba(0, 0, 0, 0.3);
   --button-text-color: #fff;
   --input-bg: var(--bg);
@@ -494,8 +494,8 @@ object {
 }
 .modal-close {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 0;
+  right: 0.4rem;
   background: transparent;
   border: none;
   color: var(--fg-alt);
@@ -992,7 +992,7 @@ object {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 2rem 0.5rem 1rem;
   background: var(--modal-alt-bg);
   border-bottom: 1px solid var(--border);
   transition: background-color 0.3s, border-color 0.3s;
@@ -1412,7 +1412,7 @@ object {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 10px 0;
+  padding: 10px 10px;
 }
 
 .product-detail-main-image img {
@@ -1576,6 +1576,7 @@ object {
   color: var(--fg);
   margin-bottom: 0.75rem;
   margin-top: 1rem;
+  padding-left: 0.75rem;
 }
 
 .product-detail-specs-fullwidth table {
@@ -1588,7 +1589,6 @@ object {
   padding: 0.5rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid var(--border-light);
-  word-break: break-word;
 }
 .product-detail-specs-fullwidth th {
   background-color: var(--modal-alt-bg);
@@ -1610,8 +1610,8 @@ object {
 }
 
 .product-detail-modal .modal-close {
-  top: 0.6rem;
-  right: 0.75rem;
+  top: 0;
+  right: 0.4rem;
   color: var(--fg-alt);
 }
 .product-detail-modal .modal-close:hover {
@@ -2238,4 +2238,8 @@ object {
   .my-builds-item-actions button:last-child {
     margin-bottom: 0;
   }
+}
+
+.error-shadow {
+  box-shadow: 0px 0px 20px 2px rgb(244, 67, 54, 0.75) !important;
 }
