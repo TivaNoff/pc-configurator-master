@@ -1,4 +1,3 @@
-// public/js/quickAdd/filters.js
 import { renderCheckboxList, getCheckedValues } from "./helpers.js";
 import { renderProductsPage, setCurrentPage } from "./productFlow.js";
 import {
@@ -36,7 +35,6 @@ function getNestedValue(obj, path) {
   }, obj);
 }
 
-// Конфигурации фильтров для каждой категории
 const categoryFilterConfigs = {
   cpu: {
     containerId: "cpu-filters",
@@ -126,9 +124,9 @@ const categoryFilterConfigs = {
   monitor: {
     containerId: "monitor-filters",
     filters: {
-      monitorBrandFilter: "metadata.manufacturer", // specs.metadata.manufacturer
+      monitorBrandFilter: "metadata.manufacturer",
       monitorScreenSizeFilter: "screen_size",
-      monitorResolutionFilter: "resolution", // Это объект {horizontalRes, verticalRes} или строка
+      monitorResolutionFilter: "resolution",
       monitorRefreshRateFilter: "refresh_rate",
       monitorPanelTypeFilter: "panel_type",
       monitorAdaptiveSyncFilter: "adaptive_sync",
@@ -172,16 +170,15 @@ const categoryFilterConfigs = {
   },
 };
 
-// Вспомогательная функция для форматирования значения фильтра для отображения и сравнения
 function formatFilterValue(value, filterKey) {
   if (value === null || value === undefined) return "";
   if (typeof value === "boolean") {
     return value ? getTranslation("yes_filter") : getTranslation("no_filter");
   }
   if (Array.isArray(value)) {
-    return value.join(", "); // Или другое форматирование для массивов
+    return value.join(", ");
   }
-  // Специальная обработка для разрешения монитора
+
   if (
     filterKey === "monitorResolutionFilter" &&
     typeof value === "object" &&
@@ -190,9 +187,8 @@ function formatFilterValue(value, filterKey) {
   ) {
     return `${value.horizontalRes}x${value.verticalRes}`;
   }
-  // Специальная обработка для других объектов, если потребуется
+
   if (typeof value === "object") {
-    // Пытаемся найти осмысленное строковое представление, например, "name" или "model"
     return value.name || value.model || JSON.stringify(value);
   }
   return String(value).trim();
@@ -253,7 +249,6 @@ export function initFilters() {
       filterContainer.style.display = "flex";
       const valueSetsForFilters = {};
       Object.keys(config.filters).forEach((filterKeyInConfig) => {
-        // Переименовал filterKey во избежание путаницы
         valueSetsForFilters[filterKeyInConfig] = new Set();
       });
 
@@ -261,11 +256,10 @@ export function initFilters() {
         Object.entries(config.filters).forEach(
           ([filterKeyInConfig, specsPath]) => {
             let rawValue = getNestedValue(product.specs, specsPath);
-            let formattedValue = formatFilterValue(rawValue, filterKeyInConfig); // Форматируем значение
+            let formattedValue = formatFilterValue(rawValue, filterKeyInConfig);
 
             if (formattedValue !== "") {
               if (specsPath === "color" && Array.isArray(rawValue)) {
-                // Специальная обработка для массива цветов
                 rawValue.forEach((color) => {
                   const formattedColor = formatFilterValue(
                     color,
@@ -279,7 +273,6 @@ export function initFilters() {
                 categoryKey === "pccase" &&
                 Array.isArray(rawValue)
               ) {
-                // Для форм-факторов корпуса
                 rawValue.forEach((ff) => {
                   const formattedFf = formatFilterValue(ff, filterKeyInConfig);
                   if (formattedFf)
@@ -419,7 +412,6 @@ export function applyFiltersAndRender() {
   renderProductsPage(filteredProducts);
 }
 
-// Обновляем checkCheckboxFilter для корректной работы с отформатированными значениями
 function checkCheckboxFilter(
   checkboxContainerId,
   rawProductValue,
@@ -437,14 +429,11 @@ function checkCheckboxFilter(
   }
 
   if (isArrayField && Array.isArray(rawProductValue)) {
-    // Если поле в продукте - массив (например, case.form_factor или case.color),
-    // проверяем, совпадает ли ХОТЯ БЫ ОДНО из его значений с выбранными в фильтре
     return rawProductValue.some((item) => {
-      const formattedItem = formatFilterValue(item, checkboxContainerId); // Форматируем каждый элемент массива
+      const formattedItem = formatFilterValue(item, checkboxContainerId);
       return checkedValues.includes(formattedItem);
     });
   } else {
-    // Для одиночных значений (включая объекты, которые были отформатированы в строку)
     const formattedProductValue = formatFilterValue(
       rawProductValue,
       checkboxContainerId

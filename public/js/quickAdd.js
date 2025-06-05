@@ -4,12 +4,12 @@ import {
   setupMbFiltersHTML,
   setupCaseFiltersHTML,
   setupCoolerFiltersHTML,
-  setupRamFiltersHTML, // ← импорт для RAM
+  setupRamFiltersHTML,
   setupStorageFiltersHTML,
   setupPsuFiltersHTML,
   setupMonitorFiltersHTML,
 } from "./quickAdd/uiSetup.js";
-import { setupListeners } from "./quickAdd/listeners.js"; // ✅ правильно
+import { setupListeners } from "./quickAdd/listeners.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   setupCpuFiltersHTML();

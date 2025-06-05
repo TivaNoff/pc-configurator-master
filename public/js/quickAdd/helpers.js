@@ -1,4 +1,3 @@
-// public/js/quickAdd/helpers.js
 import { getTranslation } from "../localization.js";
 
 export function renderCheckboxList(containerId, values, changeCallback) {
@@ -6,7 +5,6 @@ export function renderCheckboxList(containerId, values, changeCallback) {
   if (!container) return;
   container.innerHTML = "";
 
-  // Сначала получаем переводы для всех значений (если они есть)
   const translatedValues = Array.from(values).map((value) => {
     const translated =
       getTranslation(
@@ -15,7 +13,6 @@ export function renderCheckboxList(containerId, values, changeCallback) {
     return { original: String(value), translated: translated };
   });
 
-  // Сортируем по переведенным значениям
   translatedValues.sort((a, b) =>
     a.translated.localeCompare(b.translated, undefined, {
       numeric: true,
@@ -27,10 +24,10 @@ export function renderCheckboxList(containerId, values, changeCallback) {
     const label = document.createElement("label");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.value = original; // Используем оригинальное значение для value
+    checkbox.value = original;
     checkbox.name = containerId;
     checkbox.addEventListener("change", changeCallback);
-    label.append(checkbox, original); // Показываем переведенное значение пользователю
+    label.append(checkbox, original);
     container.append(label);
   });
 }
@@ -60,7 +57,6 @@ export function getKeySpecs(specs, category) {
   const keySpecs = [];
   const maxSpecsToShow = 3;
 
-  // Общие характеристики, которые могут быть у многих компонентов
   if (specs.metadata?.manufacturer)
     keySpecs.push({
       k: getTranslation("spec_key_manufacturer"),
@@ -107,7 +103,6 @@ export function getKeySpecs(specs, category) {
           v: specs.chipset,
         });
       if (specs.memory) {
-        // 'memory' (number) and 'memory_type' (string)
         let memType = specs.memory_type || "";
         keySpecs.push({
           k: getTranslation("spec_key_memory"),
@@ -179,9 +174,6 @@ export function getKeySpecs(specs, category) {
         let capacityVal = specs.capacity;
         let unit = "GB";
         if (capacityVal >= 1000) {
-          // Если емкость большая, показываем в TB
-          // capacityVal = (capacityVal / 1000).toFixed(1); // Оставляем как есть, т.к. в БД уже может быть TB
-          // unit = "TB"; // Смотрим на данные
         }
         keySpecs.push({
           k: getTranslation("spec_key_capacity"),
@@ -210,7 +202,6 @@ export function getKeySpecs(specs, category) {
       break;
     case "PCCase":
       if (specs.form_factor) {
-        // Form factor может быть массивом или строкой
         const ff = Array.isArray(specs.form_factor)
           ? specs.form_factor.join(", ")
           : specs.form_factor;
@@ -317,9 +308,8 @@ export function getKeySpecs(specs, category) {
       if (specs.led && specs.led !== "None")
         keySpecs.push({ k: getTranslation("spec_key_led"), v: specs.led });
       break;
-    // Добавь другие категории по аналогии
+
     default:
-      // Можно добавить несколько общих полей, если они есть и не были добавлены ранее
       if (
         specs.type &&
         !keySpecs.some((s) => s.k === getTranslation("spec_key_type"))

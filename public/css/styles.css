@@ -1,5 +1,4 @@
 :root {
-  /* Dark Theme (Default) */
   --bg: #131314;
   --bg-alt: #0a0a0a;
   --bg-rgb: 19, 19, 20;
@@ -7,7 +6,7 @@
   --fg-alt: #ccc;
   --accent: #8b5cf6;
   --accent-hover: #7c4dff;
-  --accent-rgb: 139, 92, 246; /* Added for RGBA usage */
+  --accent-rgb: 139, 92, 246;
   --border: #333;
   --border-light: #444;
   --success: #4caf50;
@@ -19,11 +18,10 @@
   --placeholder-color: #777;
   --modal-bg: var(--bg);
   --modal-alt-bg: var(--bg-alt);
-  --icon-color: var(--fg-alt); /* Цвет для иконок категорий */
+  --icon-color: var(--fg-alt);
 }
 
 .light-theme {
-  /* Light Theme */
   --bg: #fcfcfc;
   --bg-alt: #ededed;
   --bg-rgb: 244, 245, 247;
@@ -31,7 +29,7 @@
   --fg-alt: #555;
   --accent: #6a11cb;
   --accent-hover: #560bad;
-  --accent-rgb: 106, 17, 203; /* Added for RGBA usage */
+  --accent-rgb: 106, 17, 203;
   --border: #dee2e6;
   --border-light: #ced4da;
   --success: #28a745;
@@ -43,7 +41,7 @@
   --placeholder-color: #888;
   --modal-bg: var(--bg-alt);
   --modal-alt-bg: var(--bg);
-  --icon-color: #495057; /* Цвет для иконок категорий в светлой теме */
+  --icon-color: #495057;
 }
 
 * {
@@ -59,8 +57,8 @@ body {
   color: var(--fg);
   min-height: 100vh;
   transition: background-color 0.3s, color 0.3s;
-  font-size: 16px; /* Base font size */
-  overflow-x: hidden; /* Prevent horizontal scroll on body */
+  font-size: 16px;
+  overflow-x: hidden;
 }
 a {
   color: var(--accent);
@@ -70,7 +68,6 @@ a:hover {
   text-decoration: underline;
 }
 
-/* General responsive image handling */
 img,
 video,
 embed,
@@ -82,26 +79,24 @@ object {
 .app {
   display: flex;
   height: 100vh;
-  background: var(
-    --bg-alt
-  ); /* Sidebar and main area might have different main backgrounds */
-  position: relative; /* Needed for fixed hamburger menu positioning */
-  overflow-x: hidden; /* Prevent horizontal scroll on app container */
+  background: var(--bg-alt);
+  position: relative;
+  overflow-x: hidden;
 }
 .sidebar {
   width: 240px;
-  background: var(--bg-alt); /* Sidebar background */
+  background: var(--bg-alt);
   display: flex;
   flex-direction: column;
   padding: 16px;
   transition: background-color 0.3s, border-color 0.3s,
-    transform 0.3s ease-in-out; /* Changed width to transform */
-  position: fixed; /* Changed for potential off-canvas behavior */
+    transform 0.3s ease-in-out;
+  position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
-  z-index: 1000; /* Ensure sidebar stays on top if it overlaps, higher than hamburger */
-  transform: translateX(0); /* Default state: visible */
+  z-index: 1000;
+  transform: translateX(0);
 }
 .main {
   flex: 1;
@@ -109,11 +104,11 @@ object {
   flex-direction: column;
   overflow-y: auto;
   border-radius: 5px;
-  background-color: var(--bg); /* Main content area background */
-  margin: 0.55rem 0.55rem 2.75rem 0; /* Default margin-left will be overridden for smaller screens */
-  margin-left: 240px; /* Default margin for when sidebar is visible */
+  background-color: var(--bg);
+  margin: 0.55rem 0.55rem 2.75rem 0;
+  margin-left: 240px;
   position: relative;
-  transition: background-color 0.3s, margin-left 0.3s ease-in-out; /* Added margin-left transition */
+  transition: background-color 0.3s, margin-left 0.3s ease-in-out;
 }
 .header {
   display: flex;
@@ -149,19 +144,19 @@ object {
   align-items: center;
   flex: 1;
   padding: 1rem;
-  width: 100%; /* Ensure it takes full width within main */
+  width: 100%;
 }
 .part-category,
 .part-category-titel {
-  width: 100%; /* Changed from fixed width to 100% */
-  max-width: 830px; /* Retain max-width for larger screens */
+  width: 100%;
+  max-width: 830px;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem;
-  color: var(--fg-alt); /* Use fg-alt for less emphasis */
+  color: var(--fg-alt);
   border-top: var(--border) solid 1px;
   border-left: var(--border) solid 1px;
   border-right: var(--border) solid 1px;
@@ -169,7 +164,7 @@ object {
 }
 .part-category-titel {
   flex-direction: row;
-  color: var(--fg); /* Title text more prominent */
+  color: var(--fg);
 }
 .part-category-titel h3 {
   font-size: 1rem;
@@ -200,18 +195,18 @@ object {
   align-items: center;
   gap: 0.75rem;
   margin-left: auto;
-  width: 100%; /* Changed from -webkit-fill-available */
+  width: 100%;
 }
 .sp-thumb {
   object-fit: contain;
   border-radius: 4px;
   width: 5rem;
   height: 3.5rem;
-  background: #fff; /* Keep white for product images for now, or make it a variable */
+  background: #fff;
   padding: 3px;
   border: 1px solid var(--border-light);
   cursor: pointer;
-  flex-shrink: 0; /* Prevent shrinking on smaller screens */
+  flex-shrink: 0;
 }
 .sp-info {
   flex: 1;
@@ -219,16 +214,16 @@ object {
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
-  flex-wrap: wrap; /* Allow wrapping on small screens */
+  flex-wrap: wrap;
 }
 .sp-title {
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.3rem;
-  color: var(--fg); /* Main text color */
+  color: var(--fg);
   flex-grow: 1;
   cursor: pointer;
-  min-width: 150px; /* Ensure title has some space */
+  min-width: 150px;
 }
 .sp-price {
   color: var(--success);
@@ -279,19 +274,18 @@ object {
   align-items: center;
   z-index: 1000;
   transition: background-color 0.3s;
-  padding: 1rem; /* Add padding for smaller screens */
+  padding: 1rem;
 }
 .overlay.active {
   display: flex;
 }
 
 .mobile-overlay {
-  /* Styles for the mobile overlay */
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  z-index: 1000; /* Below sidebar but above main content */
-  display: none; /* Hidden by default */
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: none;
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
 }
@@ -301,11 +295,11 @@ object {
 }
 
 .hamburger-menu {
-  display: none; /* Hidden by default, shown in media query */
+  display: none;
   position: fixed;
   top: 15px;
   left: 15px;
-  z-index: 1002; /* Above sidebar and overlay */
+  z-index: 1002;
   background: var(--accent);
   color: var(--button-text-color);
   border: none;
@@ -321,14 +315,13 @@ object {
 
 .filter-sidebar {
   flex: 0 0 280px;
-  background: var(--modal-alt-bg); /* Use modal-alt-bg for filter sidebar */
+  background: var(--modal-alt-bg);
   padding: 1rem;
   padding-right: 1.1rem;
   overflow-y: auto;
   border-right: 1px solid var(--border);
   transition: background-color 0.3s, border-color 0.3s, transform 0.3s ease,
-    width 0.3s ease, padding 0.3s ease, opacity 0.3s ease; /* Added more transitions */
-  /* Responsive adjustments for filter sidebar will be in media queries */
+    width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
 }
 .filter-sidebar h4,
 .filter-sidebar h5 {
@@ -356,11 +349,8 @@ object {
 .products-grid {
   flex: 1;
   display: grid;
-  /* Default to single column for smallest screens, will be overridden */
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(160px, 1fr)
-  ); /* Adjusted minmax for smaller cards */
+
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 1rem;
   padding: 1rem;
   overflow-y: auto;
@@ -369,7 +359,7 @@ object {
   transition: background-color 0.3s;
 }
 .card {
-  background: var(--bg-alt); /* Card background */
+  background: var(--bg-alt);
   border: 1px solid var(--border);
   border-radius: 4px;
   display: flex;
@@ -380,12 +370,11 @@ object {
   transition: background-color 0.2s, transform 0.2s, border-color 0.2s;
 }
 .light-theme .card:hover {
-  background-color: #e9ecef; /* Lighter hover for light theme */
+  background-color: #e9ecef;
   border-color: var(--border-light);
   transform: translateY(-3px);
 }
 .card:hover {
-  /* Default dark theme hover */
   background-color: #0f0f1a;
   transform: translateY(-3px);
 }
@@ -399,14 +388,14 @@ object {
 .card-img {
   text-align: center;
   height: 100px;
-  background: #fff; /* Keep white for product images */
+  background: #fff;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
   padding: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid var(--border-light); /* Subtle separator */
+  border-bottom: 1px solid var(--border-light);
 }
 .card-img img {
   max-width: 100%;
@@ -417,7 +406,7 @@ object {
   font-size: 0.9rem;
   line-height: 1.2;
   white-space: normal;
-  max-height: 3.6em; /* approx 3 lines */
+  max-height: 3.6em;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -461,11 +450,11 @@ object {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: var(--modal-alt-bg); /* Footer of quick add modal */
+  background: var(--modal-alt-bg);
   border-top: 1px solid var(--border);
   transition: background-color 0.3s, border-color 0.3s;
-  flex-wrap: wrap; /* Allow wrapping on small screens */
-  gap: 0.5rem; /* Add gap for wrapped items */
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .rows-per-page {
   font-size: 0.9rem;
@@ -505,45 +494,42 @@ object {
 }
 .modal-close {
   position: absolute;
-  top: 0.75rem; /* Adjusted for better spacing */
+  top: 0.75rem;
   right: 0.75rem;
   background: transparent;
   border: none;
   color: var(--fg-alt);
   font-size: 1.5rem;
   cursor: pointer;
-  z-index: 1015; /* Ensure close button is above filter toggle */
+  z-index: 1015;
   transition: color 0.2s;
 }
 .modal-close:hover {
   color: var(--accent);
 }
 .modal {
-  /* Base modal style for QuickAdd */
   display: flex;
-  flex-direction: column; /* Ensure header is on top of content-wrapper */
-  height: 90%; /* Increased height */
-  max-height: 90vh; /* Max height relative to viewport */
-  background: var(--modal-bg); /* Main modal background */
-  width: 95%; /* Use percentage for width */
-  max-width: 1240px; /* Retain max-width for larger screens */
+  flex-direction: column;
+  height: 90%;
+  max-height: 90vh;
+  background: var(--modal-bg);
+  width: 95%;
+  max-width: 1240px;
   position: relative;
   border-radius: 6px;
   overflow: hidden;
-  /* margin: 0 15px; Removed fixed margin */
+
   box-shadow: 0 10px 30px var(--shadow-color);
   border: 1px solid var(--border);
   transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
-/* Adjust .modal content flow for smaller screens */
 .modal-content-wrapper {
-  /* New wrapper for filter-sidebar and quickadd-content */
   display: flex;
-  flex-direction: row; /* Default for larger screens */
+  flex-direction: row;
   flex-grow: 1;
   overflow: hidden;
-  position: relative; /* For absolute positioning of filter sidebar on mobile */
+  position: relative;
 }
 
 .quickadd-content {
@@ -571,7 +557,7 @@ object {
 }
 .beta {
   font-size: 10px;
-  background: var(--border); /* Use border for beta bg */
+  background: var(--border);
   padding: 2px 4px;
   border-radius: 4px;
   margin-left: auto;
@@ -581,12 +567,12 @@ object {
 .sidebar-controls {
   display: flex;
   align-items: center;
-  flex-wrap: wrap; /* Allow controls to wrap */
-  gap: 8px; /* Add gap between controls */
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .sidebar-controls button,
 .sidebar-controls select {
-  background: var(--input-bg); /* Use input-bg */
+  background: var(--input-bg);
   color: var(--input-fg);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -599,9 +585,7 @@ object {
 .sidebar-controls select:hover {
   border-color: var(--accent);
 }
-/* .sidebar-controls select {
-  margin-left: 8px; Removed fixed margin, gap will handle it
-} */
+
 .nav-primary ul,
 .nav-community ul {
   list-style: none;
@@ -618,7 +602,7 @@ object {
 }
 .nav-primary li a:hover,
 .nav-community li a:hover {
-  background: var(--input-bg); /* Use input-bg for hover */
+  background: var(--input-bg);
   color: var(--accent);
 }
 .nav-community {
@@ -641,7 +625,7 @@ object {
   margin-bottom: 8px;
 }
 .current-build-info {
-  background: var(--input-bg); /* Use input-bg */
+  background: var(--input-bg);
   border-radius: 4px;
   padding: 8px;
   display: flex;
@@ -657,25 +641,24 @@ object {
   margin-bottom: 4px;
 }
 
-/* Sidebar Footer & Auth Styling */
 .sidebar-footer {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* Space between buttons/user info */
+  gap: 0.5rem;
 }
 
 .sidebar-action-btn {
   width: 100%;
   text-align: center;
-  padding: 10px 12px; /* Increased padding */
+  padding: 10px 12px;
   border-radius: 4px;
   font-size: 14px;
-  font-weight: 500; /* Slightly bolder */
+  font-weight: 500;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-  border: 1px solid transparent; /* Base border */
+  border: 1px solid transparent;
 }
 
 #logged-out-view {
@@ -692,7 +675,7 @@ object {
   background-color: var(--accent-hover);
   border-color: var(--accent-hover);
 }
-/* Style for the secondary button if needed, e.g., login if signup is primary */
+
 #logged-out-view #login-btn-modal {
   background: var(--input-bg);
   color: var(--fg-alt);
@@ -751,7 +734,7 @@ object {
   border-color: var(--error-color);
 }
 #logged-in-view #logout-btn:hover {
-  background-color: rgba(244, 67, 54, 0.1); /* Error color with opacity */
+  background-color: rgba(244, 67, 54, 0.1);
   color: var(--error-color);
 }
 
@@ -761,18 +744,15 @@ object {
   align-items: center;
   margin-bottom: 24px;
   padding: 10px 10px 0;
-  flex-wrap: wrap; /* Allow header items to wrap */
-  gap: 10px; /* Add gap for wrapped items */
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .build-header-left {
   display: flex;
   align-items: center;
-  flex-wrap: wrap; /* Allow items within to wrap */
-  gap: 12px; /* Gap between New Build and selector */
+  flex-wrap: wrap;
+  gap: 12px;
 }
-/* .build-header-left > * {
-  margin-right: 12px; Removed fixed margin, gap will handle
-} */
 #new-build {
   font-size: 14px;
   cursor: pointer;
@@ -789,7 +769,7 @@ object {
   font-size: 14px;
   height: 30px;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-  min-width: 150px; /* Give selector some base width */
+  min-width: 150px;
 }
 #build-name {
   font-size: 24px;
@@ -815,7 +795,7 @@ object {
 .build-info-row {
   display: flex;
   flex-direction: column;
-  align-items: stretch; /* Changed from left to stretch items full width */
+  align-items: stretch;
   position: relative;
 }
 .build-info-row .info-item i {
@@ -828,7 +808,7 @@ object {
   box-shadow: 0px 0px 20px 2px rgba(76, 175, 79, 0.15);
 }
 .info-item.tdp {
-  color: #ff9800; /* Keep specific color for TDP */
+  color: #ff9800;
   -webkit-box-shadow: 0px 0px 20px 2px rgba(255, 153, 0, 0.15);
   box-shadow: 0px 0px 20px 2px rgba(255, 153, 0, 0.15);
 }
@@ -842,7 +822,7 @@ object {
   display: flex;
   margin: 10px 0;
   flex-wrap: wrap;
-  gap: 0; /* Remove default gap, borders will separate */
+  gap: 0;
 }
 .price {
   border-top-left-radius: 6px;
@@ -853,8 +833,8 @@ object {
   border-bottom-right-radius: 6px;
 }
 .build-info {
-  width: 100%; /* Changed from fixed width */
-  max-width: 830px; /* Retain max-width for larger screens */
+  width: 100%;
+  max-width: 830px;
   margin-bottom: 1rem;
 }
 .info-item {
@@ -869,8 +849,7 @@ object {
   min-width: 150px;
   transition: background-color 0.3s, border-color 0.3s, color 0.3s;
   justify-content: center;
-  flex-grow: 1; /* Allow items to grow and fill space */
-  /* Remove fixed border radius for individual items if they wrap */
+  flex-grow: 1;
 }
 .meta-build-info {
   display: flex;
@@ -898,23 +877,22 @@ object {
 .part-category-wraper {
   display: flex;
   justify-content: space-between;
-  width: 100%; /* Changed from -webkit-fill-available */
+  width: 100%;
   align-items: center;
-  flex-wrap: wrap; /* Allow wrapping on small screens */
-  gap: 0.5rem; /* Add gap for wrapped items */
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .part-category-header {
-  /* Новый контейнер для иконки и заголовка */
   display: flex;
   align-items: center;
-  gap: 0.6em; /* Отступ между иконкой и текстом */
+  gap: 0.6em;
 }
 
 .part-icon {
-  color: var(--icon-color); /* Используем переменную для цвета иконки */
-  font-size: 1em; /* Размер иконки относительно текста */
-  width: 20px; /* Фиксированная ширина для выравнивания */
+  color: var(--icon-color);
+  font-size: 1em;
+  width: 20px;
   text-align: center;
   transition: color 0.3s;
 }
@@ -922,7 +900,7 @@ object {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0; /* Prevent shrinking on smaller layouts */
+  flex-shrink: 0;
 }
 .detail-overlay {
   position: fixed;
@@ -934,7 +912,7 @@ object {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000; /* Ensure it's above QuickAdd if opened from there */
+  z-index: 1000;
   padding: 1rem;
 }
 .modal.detail-modal {
@@ -983,7 +961,7 @@ object {
   height: auto;
   object-fit: contain;
   border-radius: 4px;
-  background-color: #fff; /* Keep white for product images */
+  background-color: #fff;
   padding: 5px;
   margin-bottom: 1rem;
   border: 1px solid var(--border-light);
@@ -1015,16 +993,16 @@ object {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: var(--modal-alt-bg); /* Header of quick add modal */
+  background: var(--modal-alt-bg);
   border-bottom: 1px solid var(--border);
   transition: background-color 0.3s, border-color 0.3s;
-  flex-wrap: wrap; /* Allow header items to wrap */
-  gap: 0.5rem; /* Add gap for wrapped items */
-  position: relative; /* For positioning the filter toggle button */
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  position: relative;
 }
-/* Hamburger menu for QuickAdd filters */
+
 .quickadd-filter-toggle {
-  display: none; /* Hidden by default */
+  display: none;
   background: var(--accent);
   color: var(--button-text-color);
   border: none;
@@ -1033,7 +1011,7 @@ object {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-right: 0.5rem; /* Space between toggle and product count */
+  margin-right: 0.5rem;
 }
 .quickadd-filter-toggle:hover {
   background-color: var(--accent-hover);
@@ -1043,21 +1021,21 @@ object {
   color: var(--fg);
   font-size: 1rem;
   font-weight: 500;
-  white-space: nowrap; /* Prevent wrapping of "X Product(s) Found" */
+  white-space: nowrap;
 }
 .quickadd-header .qa-controls {
   display: flex;
   gap: 1rem;
   align-items: center;
-  /* margin-right: 20px; Removed fixed margin */
-  flex-grow: 1; /* Allow controls to take available space */
-  justify-content: flex-end; /* Align to the right if space allows */
-  flex-wrap: wrap; /* Allow controls themselves to wrap */
+
+  flex-grow: 1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 .quickadd-header .qa-controls label {
   color: var(--fg);
   font-size: 0.9rem;
-  white-space: nowrap; /* Prevent label text from wrapping */
+  white-space: nowrap;
 }
 .quickadd-header .qa-controls select,
 .quickadd-header .qa-controls #component-search {
@@ -1068,7 +1046,7 @@ object {
   border-radius: 4px;
   font-size: 0.9rem;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-  min-width: 120px; /* Ensure inputs have some base width */
+  min-width: 120px;
 }
 .quickadd-header .qa-controls label > select {
   margin-left: 0.25rem;
@@ -1082,7 +1060,7 @@ object {
   appearance: none;
   width: 1rem;
   height: 1rem;
-  background: var(--input-bg); /* Checkbox background */
+  background: var(--input-bg);
   border: 2px solid var(--border);
   border-radius: 4px;
   margin-right: 0.5rem;
@@ -1104,12 +1082,12 @@ object {
   left: 4px;
   width: 4px;
   height: 8px;
-  border: solid var(--bg-alt); /* Checkmark color should contrast with accent */
+  border: solid var(--bg-alt);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 .light-theme .filter-sidebar input[type="checkbox"]:checked::after {
-  border-color: #fff; /* White checkmark on light theme accent */
+  border-color: #fff;
 }
 
 .price-filter {
@@ -1148,7 +1126,7 @@ object {
   width: 1rem;
   height: 1rem;
   background: var(--accent);
-  border: 2px solid var(--bg-alt); /* Thumb border contrasts with track */
+  border: 2px solid var(--bg-alt);
   border-radius: 50%;
   margin-top: -6px;
   pointer-events: all;
@@ -1178,19 +1156,17 @@ object {
   font-size: 0.9rem;
 }
 
-/* Gemini Feature Sections Styling */
 .gemini-features-container {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   border-radius: 4px;
   transition: background-color 0.3s, border-color 0.3s;
-  margin-top: 1rem; /* Add some space above Gemini buttons */
+  margin-top: 1rem;
 }
 
 .gemini-feature-trigger {
-  /* Styles for individual button containers if needed */
-  flex-grow: 1; /* Allow triggers to take space */
+  flex-grow: 1;
 }
 
 .gemini-feature-btn {
@@ -1202,11 +1178,11 @@ object {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s, opacity 0.2s;
-  display: inline-flex; /* Changed to inline-flex to allow grow if trigger is flex */
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  width: 100%; /* Make button full width of its trigger */
-  justify-content: center; /* Center text in button */
+  width: 100%;
+  justify-content: center;
 }
 
 .gemini-feature-btn:disabled {
@@ -1215,9 +1191,7 @@ object {
   cursor: not-allowed;
 }
 
-/* Generic Modal for Gemini Responses */
 .modal-overlay.gemini-response-modal-overlay {
-  /* More specific selector for Gemini modal overlay */
   position: fixed;
   inset: 0;
   background: rgba(var(--bg-rgb), 0.85);
@@ -1229,7 +1203,6 @@ object {
 }
 
 .gemini-response-modal {
-  /* Styles for the modal content itself */
   background: var(--modal-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1281,9 +1254,7 @@ object {
   opacity: 0.8;
 }
 
-/* Loader Styles */
 .loader-container {
-  /* For QuickAdd modal loader */
   position: absolute;
   top: 0;
   left: 0;
@@ -1301,7 +1272,6 @@ object {
 }
 
 .loader-overlay {
-  /* For full page/section overlay like main build loader */
   position: fixed;
   top: 0;
   left: 0;
@@ -1326,7 +1296,6 @@ object {
 }
 
 .loader {
-  /* Main loader and Gemini modal loader */
   border: 6px solid var(--border);
   border-top: 6px solid var(--accent);
   border-radius: 50%;
@@ -1350,26 +1319,24 @@ object {
   position: relative;
 }
 
-/* NEW: Dedicated Product Detail Modal Styles */
 .product-detail-modal-overlay {
-  /* Uses .modal-overlay styles already defined for Gemini modal */
-  z-index: 1100; /* Ensure it's above other overlays if necessary */
+  z-index: 1100;
 }
 
 .product-detail-modal {
   background: var(--modal-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0; /* Remove padding to use header/content structure */
+  padding: 0;
   width: 90%;
-  max-width: 900px; /* Can be wider for more details */
+  max-width: 900px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   position: relative;
   box-shadow: 0 10px 30px var(--shadow-color);
   transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
-  overflow: hidden; /* Prevent content from breaking modal radius */
+  overflow: hidden;
 }
 
 .product-detail-header {
@@ -1378,7 +1345,7 @@ object {
   align-items: center;
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--border-light);
-  background-color: var(--modal-alt-bg); /* Slightly different bg for header */
+  background-color: var(--modal-alt-bg);
 }
 
 .product-detail-header h3 {
@@ -1408,10 +1375,7 @@ object {
 .product-detail-header-actions a:hover,
 .product-detail-header-actions button:hover {
   color: var(--accent);
-  background-color: rgba(
-    var(--accent-rgb),
-    0.1
-  ); /* Use accent with low opacity */
+  background-color: rgba(var(--accent-rgb), 0.1);
 }
 .light-theme .product-detail-header-actions a:hover,
 .light-theme .product-detail-header-actions button:hover {
@@ -1420,19 +1384,19 @@ object {
 
 .product-detail-content {
   display: flex;
-  flex-direction: row; /* Default to column for small screens */
+  flex-direction: row;
   flex-grow: 1;
   padding: 1.5rem;
-  gap: 1.5rem; /* Gap between gallery and info */
-  overflow-y: auto; /* Allow content to scroll if it overflows */
+  gap: 1.5rem;
+  overflow-y: auto;
   min-height: 310px;
 }
 
 .product-detail-gallery {
-  flex: 0 0 auto; /* Don't grow or shrink gallery initially */
-  /* width: 100%; Set width in media query if needed */
-  max-width: 300px; /* Limit gallery width on larger screens */
-  margin: 0 auto 1.5rem auto; /* Center gallery and add bottom margin on small screens */
+  flex: 0 0 auto;
+
+  max-width: 300px;
+  margin: 0 auto 1.5rem auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -1440,8 +1404,8 @@ object {
 
 .product-detail-main-image {
   width: 100%;
-  height: 280px; /* Adjust as needed */
-  background-color: #fff; /* White background for images */
+  height: 280px;
+  background-color: #fff;
   border: 1px solid var(--border-light);
   border-radius: 6px;
   display: flex;
@@ -1460,10 +1424,10 @@ object {
 .product-detail-thumbnails {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap; /* Allow thumbnails to wrap */
-  max-height: 100px; /* Limit height if many thumbnails */
+  flex-wrap: wrap;
+  max-height: 100px;
   overflow-y: auto;
-  justify-content: center; /* Center thumbnails */
+  justify-content: center;
 }
 
 .product-detail-thumbnails img {
@@ -1484,13 +1448,12 @@ object {
 }
 
 .product-detail-info {
-  flex: 1; /* Takes remaining space */
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .product-detail-info h4 {
-  /* Product Name */
   font-size: 1.3rem;
   font-weight: 600;
   color: var(--fg);
@@ -1508,7 +1471,7 @@ object {
   display: flex;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap; /* Allow buttons to wrap */
+  flex-wrap: wrap;
 }
 
 .product-action-btn {
@@ -1523,11 +1486,11 @@ object {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  flex-grow: 1; /* Allow buttons to grow and fill space */
-  justify-content: center; /* Center content in button */
+  flex-grow: 1;
+  justify-content: center;
 }
 .product-action-btn i {
-  font-size: 0.9em; /* Adjust icon size if needed */
+  font-size: 0.9em;
 }
 
 .product-action-btn:hover {
@@ -1553,14 +1516,14 @@ object {
 }
 .merchant-row {
   display: grid;
-  /* Default to single column for smallest, will adjust in media query */
+
   grid-template-columns: 1fr;
-  gap: 0.5rem; /* Reduced gap */
+  gap: 0.5rem;
   align-items: center;
   padding: 0.5rem 0;
   font-size: 0.9rem;
   border-bottom: 1px solid var(--border-light);
-  text-align: center; /* Center text for single column */
+  text-align: center;
 }
 .merchant-row:last-child {
   border-bottom: none;
@@ -1570,16 +1533,14 @@ object {
   color: var(--fg);
 }
 .merchant-availability {
-  color: var(--success); /* Green for in stock */
+  color: var(--success);
 }
 .merchant-availability.out-of-stock {
-  /* Add this class if out of stock */
   color: var(--error-color);
 }
 .merchant-price {
   font-weight: 600;
   color: var(--accent);
-  /* text-align: right; Removed for single column centering */
 }
 .merchant-buy-btn {
   background-color: var(--accent);
@@ -1590,8 +1551,8 @@ object {
   text-decoration: none;
   text-align: center;
   transition: background-color 0.2s;
-  display: inline-block; /* Make it block for centering or inline-block */
-  margin-top: 0.5rem; /* Add some space above buy button in single column */
+  display: inline-block;
+  margin-top: 0.5rem;
 }
 .merchant-buy-btn:hover {
   background-color: var(--accent-hover);
@@ -1605,10 +1566,10 @@ object {
 }
 
 .product-detail-specs-fullwidth {
-  padding: 0 1.5rem 1.5rem 1.5rem; /* Padding for the specs table section */
+  padding: 0 1.5rem 1.5rem 1.5rem;
   border-top: 1px solid var(--border-light);
-  margin-top: 1rem; /* Space above specs table if merchants are present */
-  overflow: auto; /* Changed to auto to allow scrolling when content overflows */
+  margin-top: 1rem;
+  overflow: auto;
 }
 .product-detail-specs-fullwidth h5 {
   font-size: 1.1rem;
@@ -1627,7 +1588,7 @@ object {
   padding: 0.5rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid var(--border-light);
-  word-break: break-word; /* Allow long words to break */
+  word-break: break-word;
 }
 .product-detail-specs-fullwidth th {
   background-color: var(--modal-alt-bg);
@@ -1648,9 +1609,8 @@ object {
   font-size: 0.85rem;
 }
 
-/* Ensure modal close button is styled correctly */
 .product-detail-modal .modal-close {
-  top: 0.6rem; /* Adjust position for new header */
+  top: 0.6rem;
   right: 0.75rem;
   color: var(--fg-alt);
 }
@@ -1658,31 +1618,29 @@ object {
   color: var(--accent);
 }
 
-/* Helper for scrollable content inside modal if needed */
 .scrollable-modal-content {
   overflow-y: auto;
-  max-height: calc(80vh - 150px); /* Example: 80vh - header/footer height */
-  padding: 1rem; /* Add padding if content is directly inside this */
+  max-height: calc(80vh - 150px);
+  padding: 1rem;
 }
 
-/* NEW: Auth Modal Styles */
 .auth-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(var(--bg-rgb), 0.85); /* Darker overlay */
-  display: none; /* Hidden by default */
+  background: rgba(var(--bg-rgb), 0.85);
+  display: none;
   justify-content: center;
   align-items: center;
-  z-index: 1200; /* Higher z-index */
+  z-index: 1200;
 }
 
 .auth-modal {
   background: var(--modal-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 2rem; /* More padding */
+  padding: 2rem;
   width: 90%;
-  max-width: 400px; /* Optimal width for auth forms */
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -1692,14 +1650,14 @@ object {
 
 .auth-modal h3 {
   color: var(--fg);
-  margin-bottom: 1.5rem; /* More space below title */
+  margin-bottom: 1.5rem;
   text-align: center;
-  font-size: 1.5rem; /* Larger title */
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
 .auth-modal .form-group {
-  margin-bottom: 1.25rem; /* Space between form fields */
+  margin-bottom: 1.25rem;
 }
 
 .auth-modal label {
@@ -1741,7 +1699,7 @@ object {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: 0.5rem; /* Space above button */
+  margin-top: 0.5rem;
 }
 
 .auth-modal .auth-submit-btn:hover {
@@ -1753,7 +1711,7 @@ object {
   font-size: 0.85rem;
   text-align: center;
   margin-top: 1rem;
-  min-height: 1.2em; /* Prevent layout shift */
+  min-height: 1.2em;
 }
 .auth-modal .auth-switch-text {
   text-align: center;
@@ -1769,7 +1727,6 @@ object {
   text-decoration: underline;
 }
 
-/* NEW: My Builds Modal Styles */
 .my-builds-modal-overlay {
   position: fixed;
   inset: 0;
@@ -1777,7 +1734,7 @@ object {
   display: none;
   justify-content: center;
   align-items: center;
-  z-index: 1150; /* Slightly lower than auth modals if they can overlap */
+  z-index: 1150;
 }
 
 .my-builds-modal {
@@ -1786,7 +1743,7 @@ object {
   border-radius: 8px;
   padding: 1.5rem;
   width: 90%;
-  max-width: 600px; /* Wider for build list */
+  max-width: 600px;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
@@ -1814,8 +1771,8 @@ object {
   padding: 0.75rem 0.5rem;
   border-bottom: 1px solid var(--border-light);
   transition: background-color 0.2s;
-  flex-wrap: wrap; /* Allow wrapping */
-  gap: 0.5rem; /* Gap for wrapped items */
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .my-builds-item:last-child {
   border-bottom: none;
@@ -1828,7 +1785,7 @@ object {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  flex-grow: 1; /* Allow info to take space */
+  flex-grow: 1;
 }
 .my-builds-item-name {
   font-weight: 500;
@@ -1841,9 +1798,9 @@ object {
 }
 
 .my-builds-item-actions {
-  display: flex; /* Ensure buttons are in a row if space permits */
-  gap: 0.5rem; /* Spacing between buttons */
-  flex-shrink: 0; /* Prevent buttons from shrinking too much */
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .my-builds-item-actions button {
@@ -1854,7 +1811,7 @@ object {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85rem;
-  /* margin-left: 0.5rem; Replaced by gap */
+
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 .my-builds-item-actions button:hover {
@@ -1871,15 +1828,14 @@ object {
   flex-direction: column;
 }
 
-/* Welcome Section Styles */
 .welcome-section {
-  display: flex; /* Initially shown */
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: 2rem;
-  flex-grow: 1; /* Takes up available space in main */
+  flex-grow: 1;
   background-color: var(--bg);
   color: var(--fg);
 }
@@ -1889,7 +1845,7 @@ object {
 }
 
 .welcome-logo {
-  width: 150px; /* Adjust as needed */
+  width: 150px;
   margin-bottom: 1.5rem;
 }
 
@@ -1924,14 +1880,13 @@ object {
   transform: translateY(-2px);
 }
 
-/* Helper class to hide elements */
 .hidden {
   display: none !important;
 }
 
 .sitefooter {
-  height: auto; /* Allow height to adjust based on content */
-  min-height: 2.75rem; /* Retain minimum height */
+  height: auto;
+  min-height: 2.75rem;
   position: fixed;
   bottom: 0;
   background: var(--bg-alt);
@@ -1939,42 +1894,31 @@ object {
   width: -webkit-fill-available;
   align-items: center;
   font-size: 0.8rem;
-  justify-content: flex-end; /* Keep content to the right */
+  justify-content: flex-end;
   color: var(--placeholder-color);
-  padding: 0.5rem 10px; /* Add some vertical padding */
-  gap: 15px; /* Reduced gap for smaller screens */
-  box-sizing: border-box; /* Ensure padding is included in width */
-  z-index: 100; /* Ensure footer is above main content scroll */
+  padding: 0.5rem 10px;
+  gap: 15px;
+  box-sizing: border-box;
+  z-index: 100;
 }
 
 .sitefooterling {
   color: var(--placeholder-color);
 }
 
-/* .sitefooterwrapper {
-  display: flex;
-  justify-content: center;
-} */
-
-/* --- Media Queries for Responsiveness --- */
-
-/* Medium devices (tablets, landscape phones) and down */
 @media only screen and (max-width: 991px) {
   .sidebar {
-    width: 200px; /* Slightly reduce sidebar width */
+    width: 200px;
     padding: 12px;
     font-size: 0.9rem;
-    z-index: 1100; /* Adjust base font for sidebar */
-    /* Sidebar is already fixed, transform will be handled by JS/class */
+    z-index: 1100;
   }
   .sidebar.sidebar-hidden {
-    /* Class to hide sidebar */
     transform: translateX(-100%);
   }
   .sidebar.sidebar-open {
-    /* Class to show sidebar */
     transform: translateX(0);
-    box-shadow: 3px 0 15px rgba(0, 0, 0, 0.2); /* Add shadow when open */
+    box-shadow: 3px 0 15px rgba(0, 0, 0, 0.2);
   }
 
   .sidebar-top {
@@ -1984,21 +1928,20 @@ object {
     width: 7rem;
   }
   .sidebar-controls {
-    flex-direction: column; /* Stack controls */
+    flex-direction: column;
     align-items: flex-start;
   }
   .sidebar-controls select {
     margin-left: 0;
-    width: 100%; /* Make selects full width */
+    width: 100%;
   }
 
   .main {
-    margin-left: 200px; /* Adjust margin to match new sidebar width */
+    margin-left: 200px;
     margin-right: 0.3rem;
     margin-top: 0.3rem;
   }
   .main.sidebar-hidden {
-    /* Adjust main content margin when sidebar is hidden */
     margin-left: 0;
   }
 
@@ -2008,7 +1951,7 @@ object {
     padding: 0.6rem;
   }
   .sp-info {
-    flex-direction: column; /* Stack title and price/actions */
+    flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
@@ -2017,52 +1960,45 @@ object {
     justify-content: space-between;
   }
   .products-grid {
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(150px, 1fr)
-    ); /* Smaller cards */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
   .modal {
-    /* General modal adjustments */
     width: 90%;
     max-height: 85vh;
   }
   .modal-content-wrapper {
-    /* For QuickAdd modal */
     flex-direction: column;
   }
   .filter-sidebar {
-    /* Default state for filter sidebar on this breakpoint - hidden */
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 240px; /* Or desired width */
+    width: 240px;
     transform: translateX(-100%);
-    z-index: 10; /* Above product grid but below header */
+    z-index: 10;
     border-right: 1px solid var(--border);
     border-bottom: none;
-    max-height: none; /* Remove max-height */
+    max-height: none;
     overflow-y: auto;
   }
   .filter-sidebar.filter-sidebar-open {
-    /* Class to show filter sidebar */
     transform: translateX(0);
   }
 
   .quickadd-header .quickadd-filter-toggle {
-    display: block; /* Show filter toggle button */
+    display: block;
   }
 
   .quickadd-header .qa-controls {
-    flex-direction: column; /* Stack sort and search */
+    flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
   }
   .quickadd-header .qa-controls label,
   .quickadd-header .qa-controls input,
   .quickadd-header .qa-controls select {
-    width: 100%; /* Make controls full width */
+    width: 100%;
   }
 
   #sortBySelect {
@@ -2071,7 +2007,7 @@ object {
   .info-item {
     font-size: 0.9rem;
     padding: 8px;
-    min-width: 120px; /* Reduce min-width */
+    min-width: 120px;
   }
   #build-name {
     font-size: 20px;
@@ -2089,44 +2025,38 @@ object {
     width: -webkit-fill-available;
   }
   .product-detail-content {
-    flex-direction: column; /* Stack gallery and info */
+    flex-direction: column;
   }
   .product-detail-gallery {
-    max-width: 100%; /* Allow gallery to be full width */
+    max-width: 100%;
     margin-bottom: 1rem;
   }
   .merchant-row {
-    /* Adjust merchant row for better stacking */
-    grid-template-columns: 1fr; /* Stack all items */
+    grid-template-columns: 1fr;
     text-align: left;
   }
   .merchant-price {
     text-align: left;
   }
   .merchant-buy-btn {
-    width: 100%; /* Make buy button full width */
+    width: 100%;
     margin-top: 0.5rem;
   }
   .hamburger-menu {
-    display: block; /* Show hamburger on this breakpoint and below */
+    display: block;
   }
   .sidebar {
-    /* Default to hidden on this breakpoint and below */
     transform: translateX(-100%);
   }
   .main {
-    /* Main content takes full width when sidebar is hidden */
     margin-left: 0;
   }
 }
 
-/* Small devices (portrait tablets, large phones) */
 @media only screen and (max-width: 767px) {
   body {
-    font-size: 15px; /* Slightly smaller base font */
+    font-size: 15px;
   }
-  /* Sidebar is already hidden by default from 991px query, .sidebar-open shows it */
-  /* .main margin is already 0 from 991px query when sidebar is hidden */
 
   .header h1 {
     font-size: 1.1rem;
@@ -2135,33 +2065,30 @@ object {
     padding: 0.4rem 0.8rem;
   }
   .part-category-wraper {
-    flex-direction: column; /* Stack category header and add button */
+    flex-direction: column;
     align-items: flex-start;
   }
   .part-category .add-btn {
-    margin-top: 0.5rem; /* Space when stacked */
-    width: 100%; /* Make add button full width */
+    margin-top: 0.5rem;
+    width: 100%;
     text-align: center;
   }
   .selected-part {
-    flex-direction: column; /* Stack image and info */
+    flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
   .sp-thumb {
-    width: 100%; /* Full width image container */
-    height: auto; /* Adjust height automatically */
-    max-height: 150px; /* Limit image height */
+    width: 100%;
+    height: auto;
+    max-height: 150px;
   }
   .sp-info {
     width: 100%;
   }
 
   .products-grid {
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(140px, 1fr)
-    ); /* Even smaller cards */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     padding: 0.5rem;
   }
   .quickadd-footer {
@@ -2176,10 +2103,10 @@ object {
   }
   .build-header {
     flex-direction: column;
-    align-items: stretch; /* Stretch items to full width */
-    padding-top: 45px; /* Add padding to avoid overlap with hamburger, if hamburger is inside main */
+    align-items: stretch;
+    padding-top: 45px;
   }
-  /* If hamburger is outside main, this padding might not be needed or adjusted differently */
+
   .build-header-left {
     flex-direction: column;
     align-items: stretch;
@@ -2191,27 +2118,26 @@ object {
     text-align: center;
   }
   .info-item-wrapper {
-    flex-direction: column; /* Stack info items */
+    flex-direction: column;
   }
   .info-item {
-    border-radius: 6px !important; /* Apply radius to all sides when stacked */
-    margin-bottom: 0.5rem; /* Space between stacked items */
+    border-radius: 6px !important;
+    margin-bottom: 0.5rem;
   }
   .info-item:last-child {
     margin-bottom: 0;
   }
   .gemini-features-container {
-    padding-left: 0; /* Reset padding if hamburger is present */
+    padding-left: 0;
   }
   .main > .build-header,
   .main > .parts-list {
-    /* Add padding to main content if hamburger is present */
-    padding-left: 15px; /* Default padding */
-    padding-right: 15px; /* Add right padding too */
+    padding-left: 15px;
+    padding-right: 15px;
   }
-  /* Ensure build-header specific padding if hamburger is outside */
+
   .app > .main > .build-header {
-    padding-top: 50px; /* Space for fixed hamburger */
+    padding-top: 50px;
   }
 
   .hamburger-menu {
@@ -2222,33 +2148,28 @@ object {
     font-size: 0.75rem;
     padding: 0.5rem 5px;
     gap: 10px;
-    justify-content: center; /* Center footer content on small screens */
+    justify-content: center;
   }
   .filter-sidebar {
-    /* Ensure filter sidebar is full width when open on small screens */
     width: 100%;
   }
 }
 
-/* Extra small devices (phones) */
 @media only screen and (max-width: 479px) {
   body {
     font-size: 14px;
   }
   .sidebar {
-    width: 100%; /* Full width sidebar on very small screens */
-    padding-top: 50px; /* Space for a close button if added inside sidebar */
+    width: 100%;
+    padding-top: 50px;
   }
   .main.sidebar-hidden {
     margin-left: 0;
   }
   .main:not(.sidebar-hidden) {
-    /* If sidebar is open and full width */
-    margin-left: 0; /* Main content might be fully covered or pushed */
-    /* Consider adding `display: none;` to main when sidebar is full-width and open */
+    margin-left: 0;
   }
   .app > .main > .build-header {
-    /* Adjust top padding for smaller hamburger */
     padding-top: 45px;
   }
 
@@ -2273,22 +2194,22 @@ object {
     padding: 0.5rem 0.8rem;
   }
   .products-grid {
-    grid-template-columns: 1fr; /* Single column for very small screens */
+    grid-template-columns: 1fr;
   }
   .card-title {
-    -webkit-line-clamp: 2; /* Allow fewer lines for title */
-    line-clamp: 2; /* Standard property for compatibility */
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     max-height: 2.4em;
   }
   .quickadd-header .qa-controls {
     gap: 0.3rem;
-    flex-direction: column; /* Stack controls in quickadd header */
+    flex-direction: column;
     align-items: stretch;
   }
   .quickadd-header .qa-controls select,
   .quickadd-header .qa-controls #component-search {
     font-size: 0.85rem;
-    width: 100%; /* Full width for inputs */
+    width: 100%;
   }
   #productDetailSpecs {
     padding: 0;
@@ -2306,13 +2227,13 @@ object {
     font-size: 1.15rem;
   }
   .my-builds-item-actions {
-    flex-direction: column; /* Stack buttons in "My Builds" */
+    flex-direction: column;
     align-items: stretch;
     width: 100%;
   }
   .my-builds-item-actions button {
     margin-left: 0;
-    margin-bottom: 0.3rem; /* Space between stacked buttons */
+    margin-bottom: 0.3rem;
   }
   .my-builds-item-actions button:last-child {
     margin-bottom: 0;

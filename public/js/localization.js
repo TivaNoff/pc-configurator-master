@@ -50,7 +50,7 @@ const translations = {
     unnamed_component: "Unnamed Component",
     unnamed_build_placeholder: "Unnamed Build",
     new_build_default_name: "New Build",
-    new_build_default_name_prefix: "New Build", // For "New Build HH:MM"
+    new_build_default_name_prefix: "New Build",
     you_author_placeholder: "You",
     anonymous_author: "Anonymous",
     login_to_start: "Login to get started",

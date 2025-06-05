@@ -1,4 +1,3 @@
-// public/js/quickAdd/listeners.js
 import {
   applyFiltersAndRender,
   initFilters,
@@ -14,8 +13,8 @@ import {
   setCurrentCategory as setFlowCategory,
 } from "./productFlow.js";
 import { debounce } from "./helpers.js";
-import { showProductDetails } from "../build.js"; // Импортируем из build.js
-import { getTranslation } from "../localization.js"; // Для перевода алерта
+import { showProductDetails } from "../build.js";
+import { getTranslation } from "../localization.js";
 
 export function setupListeners() {
   const overlay = document.getElementById("quickAddOverlay");
@@ -32,7 +31,6 @@ export function setupListeners() {
   const searchInput = document.getElementById("component-search");
   const sortBySelect = document.getElementById("sortBySelect");
 
-  // New elements for QuickAdd filter toggle
   const quickAddFilterToggleButton = document.getElementById(
     "quickadd-filter-toggle"
   );
@@ -53,7 +51,6 @@ export function setupListeners() {
       if (quickAddLoader) quickAddLoader.style.display = "flex";
       if (grid) grid.innerHTML = "";
 
-      // Reset filter sidebar state when opening QuickAdd for a new category
       if (
         quickAddFilterSidebar &&
         quickAddFilterSidebar.classList.contains("filter-sidebar-open")
@@ -62,11 +59,11 @@ export function setupListeners() {
       }
       if (quickAddFilterToggleButton) {
         quickAddFilterToggleButton.setAttribute("aria-expanded", "false");
-        // Ensure icon is bars if it was changed to times
+
         const icon = quickAddFilterToggleButton.querySelector("i");
         if (icon && icon.classList.contains("fa-times")) {
           icon.classList.remove("fa-times");
-          icon.classList.add("fa-filter"); // Or fa-bars if you prefer
+          icon.classList.add("fa-filter");
         }
       }
 
@@ -132,7 +129,7 @@ export function setupListeners() {
     closeBtn.addEventListener("click", () => {
       if (overlay) overlay.classList.remove("active");
       document.body.style.overflow = "";
-      // Ensure filter sidebar is closed when QuickAdd is closed
+
       if (
         quickAddFilterSidebar &&
         quickAddFilterSidebar.classList.contains("filter-sidebar-open")
@@ -173,9 +170,9 @@ export function setupListeners() {
               category:
                 product.category ||
                 document.querySelector(
-                  ".part-category.active-category-for-quickadd" // This selector might not exist or be reliable
+                  ".part-category.active-category-for-quickadd"
                 )?.dataset.cat ||
-                currentCategory, // Fallback to currentCategory from filters.js
+                currentCategory,
               product,
             },
           })
@@ -183,7 +180,7 @@ export function setupListeners() {
         window.dispatchEvent(new Event("buildUpdated"));
         if (overlay) overlay.classList.remove("active");
         document.body.style.overflow = "";
-        // Ensure filter sidebar is closed
+
         if (
           quickAddFilterSidebar &&
           quickAddFilterSidebar.classList.contains("filter-sidebar-open")
@@ -199,12 +196,11 @@ export function setupListeners() {
           }
         }
       } else {
-        showProductDetails(product); // Используем импортированную функцию
+        showProductDetails(product);
       }
     });
   }
 
-  // Listener for the QuickAdd filter toggle button
   if (quickAddFilterToggleButton && quickAddFilterSidebar) {
     quickAddFilterToggleButton.addEventListener("click", () => {
       const isOpen = quickAddFilterSidebar.classList.toggle(
@@ -214,21 +210,17 @@ export function setupListeners() {
         "aria-expanded",
         isOpen.toString()
       );
-      // Optionally change icon
+
       const icon = quickAddFilterToggleButton.querySelector("i");
       if (icon) {
         if (isOpen) {
-          icon.classList.remove("fa-filter"); // Or fa-bars
+          icon.classList.remove("fa-filter");
           icon.classList.add("fa-times");
         } else {
           icon.classList.remove("fa-times");
-          icon.classList.add("fa-filter"); // Or fa-bars
+          icon.classList.add("fa-filter");
         }
       }
     });
   }
 }
-
-// Добавьте ключи для перевода ошибок в localization.js
-// en: { ... error_loading_components_quickadd: "Error loading or processing products:", error_failed_to_load_components: "Failed to load components. Please try again.", error_product_not_found_by_id: "Product not found for card ID:" ...}
-// uk: { ... error_loading_components_quickadd: "Помилка завантаження або обробки продуктів:", error_failed_to_load_components: "Не вдалося завантажити компоненти. Спробуйте ще раз.", error_product_not_found_by_id: "Продукт не знайдено за ID картки:" ...}

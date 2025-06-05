@@ -1,4 +1,4 @@
-// public/js/auth.js
+
 async function postJSON(url, body) {
   const res = await fetch(url, {
     method: "POST",
@@ -30,17 +30,17 @@ if (location.pathname.endsWith("register.html")) {
     .getElementById("registerForm")
     .addEventListener("submit", async (e) => {
       e.preventDefault();
-      const { email, password, username } = e.target; // MODIFIED: Added username
+      const { email, password, username } = e.target; 
       const { message, userId, error } = await postJSON("/api/auth/register", {
-        // MODIFIED: Added userId and error for better feedback
-        username: username.value, // MODIFIED: Added username
+        
+        username: username.value, 
         email: email.value,
         password: password.value,
       });
-      // MODIFIED: Check for userId for success, display error message from server or generic error
+      
       if (userId) {
-        // Optionally display success message or just redirect
-        alert(message || "Реєстрація успішна!"); // Example success message
+        
+        alert(message || "Реєстрація успішна!"); 
         location.href = "/login.html";
       } else {
         document.getElementById("error").textContent =

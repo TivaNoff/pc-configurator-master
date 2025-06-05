@@ -1,9 +1,6 @@
-// public/js/quickAdd/uiSetup.js
-import { getTranslation } from "../localization.js"; // *** ДОБАВЛЕН ИМПОРТ ***
+import { getTranslation } from "../localization.js";
 
-// Вспомогательная функция для создания секции фильтра
 function createFilterSection(titleKey, filterDivId) {
-  // Теперь getTranslation должна быть доступна
   const titleText =
     getTranslation(titleKey) ||
     titleKey

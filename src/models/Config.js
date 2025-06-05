@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const configSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   name: { type: String, default: "Моя збірка" },
-  components: [{ type: String }], // массив opendb_id
+  components: [{ type: String }], 
   totalPrice: { type: Number, default: 0 },
-  authorName: { type: String }, // Added to store the username of the author
+  authorName: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

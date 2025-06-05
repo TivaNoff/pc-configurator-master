@@ -4,7 +4,7 @@ import {
   translateDynamicElement,
   currentLanguage,
   translatePage,
-  setLanguage, // Ensure setLanguage is exported and imported if used here for initial setup
+  setLanguage,
 } from "./localization.js";
 
 // Helper function to parse JWT token
@@ -32,7 +32,7 @@ const API = {
   create: "/api/configs",
   load: (id) => `/api/configs/${id}`,
   update: (id) => `/api/configs/${id}`,
-  delete: (id) => `/api/configs/${id}`, // Added for clarity
+  delete: (id) => `/api/configs/${id}`,
   component: (id) => `/api/components/${id}`,
   login: "/api/auth/login",
   register: "/api/auth/register",
@@ -57,9 +57,9 @@ const buildDateSpan = document.getElementById("build-date");
 const buildAuthorSpan = document.getElementById("build-author");
 
 // --- Sections ---
-const welcomeSection = document.getElementById("welcome-section"); // NEW
-const buildHeader = document.querySelector(".build-header"); // UPDATED selector
-const partsListSection = document.querySelector(".parts-list"); // UPDATED selector
+const welcomeSection = document.getElementById("welcome-section"); 
+const buildHeader = document.querySelector(".build-header"); 
+const partsListSection = document.querySelector(".parts-list"); 
 
 // Sidebar auth elements
 const loggedOutView = document.getElementById("logged-out-view");
@@ -71,8 +71,8 @@ const myBuildsBtn = document.getElementById("my-builds-btn");
 const logoutBtn = document.getElementById("logout-btn");
 
 // --- Navigation & Welcome Screen Buttons ---
-const navBuildBtn = document.getElementById("nav-build-btn"); // NEW
-const startBuildingBtn = document.getElementById("start-building-btn"); // NEW
+const navBuildBtn = document.getElementById("nav-build-btn");
+const startBuildingBtn = document.getElementById("start-building-btn");
 
 // Auth Modal Elements
 const loginModalOverlay = document.getElementById("loginModalOverlay");
